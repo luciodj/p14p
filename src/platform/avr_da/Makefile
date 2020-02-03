@@ -10,19 +10,19 @@
 PM_LIB_ROOT = pmvm_$(PLATFORM)
 PM_LIB_FN = lib$(PM_LIB_ROOT).a
 PM_LIB_PATH = ../../vm/$(PM_LIB_FN)
-PM_USR_SOURCES = main.py 
-#../../lib/avr_da.py
+PM_USR_SOURCES = main.py avr.py
 PMIMGCREATOR := ../../tools/pmCoCreator.py
 PMGENPMFEATURES := ../../tools/pmGenPmFeatures.py
 IPM=true
 
+DEV_PACK = "/Applications/microchip/mplabx/v5.35/packs/Microchip/AVR-Dx_DFP/1.0.18"
 
 # Platform Configuration
 MCU = avr128da48
 FORMAT = ihex
 TARGET = main
 F_CPU = 4000000UL
-SRC = $(TARGET).c plat.c $(TARGET)_nat.c $(TARGET)_img.c
+SRC = $(TARGET).c plat.c pm_generated_objs.c pm_generated_types.h
 ASRC =
 OPT = s
 
@@ -45,8 +45,9 @@ ifeq ($(DEBUG),true)
 	CDEFS += -g -g$(DEBUG_FMT) -D__DEBUG__=1
 endif
 
+
 # Place -I options here
-CINCS = -I../../vm -I "$(abspath .)" -I "/Users/m91329/.mchp_packs/Microchip/AVR-Dx_DFP/1.0.16"/include -B "/Users/m91329/.mchp_packs/Microchip/AVR-Dx_DFP/1.0.16"/avr-gcc/dev/avr128da48
+CINCS = -I../../vm -I "$(abspath .)" -I$(DEV_PACK)/include  -B $(DEV_PACK)/avr-gcc/dev/avr128da48
 
 
 CDEBUG = -g$(DEBUG_FMT)
@@ -169,7 +170,6 @@ program: $(TARGET).hex $(TARGET).eep
 	$(COPY)  $(COPY_FLAGS) $(TARGET).hex $(TARGET_DRIVE)code.hex
 
 
-
 # Convert ELF to COFF for use in debugging / simulating in AVR Studio or VMLAB.
 COFFCONVERT=$(OBJCOPY) --debugging \
 --change-section-address .data-0x800000 \
@@ -184,8 +184,8 @@ pmvm : $(PM_LIB_PATH)
 $(PM_LIB_PATH) : ../../vm/*.c ../../vm/*.h
 	make -C ../../vm
 
-$(TARGET)_nat.c $(TARGET)_img.c: $(PM_USR_SOURCES) pmfeatures.py
-	$(PMIMGCREATOR) -f pmfeatures.py -c -u --memspace=flash -o $(TARGET)_img.c --native-file=$(TARGET)_nat.c $(PM_USR_SOURCES)
+#$(TARGET)_nat.c $(TARGET)_img.c: $(PM_USR_SOURCES) pmfeatures.py
+#	$(PMIMGCREATOR) -f pmfeatures.py -c -u --memspace=flash -o $(TARGET)_img.c --native-file=$(TARGET)_nat.c $(PM_USR_SOURCES)
 
 pmfeatures.h : pmfeatures.py $(PMGENPMFEATURES)
 	$(PMGENPMFEATURES) pmfeatures.py > $@

@@ -26,8 +26,8 @@ from pmCoFilter import co_filter_factory
 
 
 # Issue 227: Raise an error at build-time if CPython version is not supported
-assert sys.version_info[0] == 2 and sys.version_info[1] == 6, \
-    "P14p REQUIRES CPython 2.6.x in order to support the correct bytecodes"
+assert sys.version_info[0] == 2 and sys.version_info[1] == 7, \
+    "P14p REQUIRES CPython 2.7.x in order to support the correct bytecodes"
 
 
 PM_GENERATED_OBJS_FN = "pm_generated_objs.c"

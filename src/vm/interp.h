@@ -126,10 +126,10 @@ typedef enum PmBcode_e
     UNARY_NOT,
     UNARY_CONVERT,
     UNUSED_0E,
-    UNARY_INVERT,
+    UNARY_INVERT,               /* d015 */
     UNUSED_10,                  /* 0x10 */
     UNUSED_11,
-    LIST_APPEND,
+    UNUSED_12,
     BINARY_POWER,
     BINARY_MULTIPLY,            /* d020 */
     BINARY_DIVIDE,
@@ -208,7 +208,7 @@ typedef enum PmBcode_e
     DELETE_NAME,
     UNPACK_SEQUENCE,
     FOR_ITER,
-    UNUSED_5E,
+    LIST_APPEND,            /* moved here in 2.7 */
     STORE_ATTR,
     DELETE_ATTR,                /* 0x60 */
     STORE_GLOBAL,
@@ -218,18 +218,19 @@ typedef enum PmBcode_e
     LOAD_NAME,
     BUILD_TUPLE,
     BUILD_LIST,
+    BUILD_SET,      /* d104 new in 2.7 */
     BUILD_MAP,
     LOAD_ATTR,
     COMPARE_OP,
     IMPORT_NAME,
     IMPORT_FROM,
-    UNUSED_6D,
+    /* UNUSED_6D,       removed in 2.7 */
     JUMP_FORWARD,               /* d110 */
     JUMP_IF_FALSE,
     JUMP_IF_TRUE,               /* 0x70 */
     JUMP_ABSOLUTE,
-    UNUSED_72,
-    UNUSED_73,
+    POP_JUMP_IF_FALSE,          /* new in 2.7*/
+    POP_JUMP_IF_TRUE,          /* new in 2.7*/
     LOAD_GLOBAL,
     UNUSED_75,
     UNUSED_76,
@@ -257,9 +258,12 @@ typedef enum PmBcode_e
     CALL_FUNCTION_VAR,          /* d140 */
     CALL_FUNCTION_KW,
     CALL_FUNCTION_VAR_KW,
+    SETUP_WITH,                 /* new in 2.7 */
+    UNUSED_144,
     EXTENDED_ARG,
+    SET_ADD,
+    MAP_ADD,
 
-    UNUSED_90, UNUSED_91, UNUSED_92, UNUSED_93,
     UNUSED_94, UNUSED_95, UNUSED_96, UNUSED_97,
     UNUSED_98, UNUSED_99, UNUSED_9A, UNUSED_9B,
     UNUSED_9C, UNUSED_9D, UNUSED_9E, UNUSED_9F,

@@ -152,18 +152,17 @@ class PipeConnection(Connection):
 class SerialConnection(Connection):
     """Provides ipm-host to target connection over a serial device.
     This connection should work on any platform that PySerial supports.
-    The ipm-device must be running at the same baud rate (19200 default).
+    The ipm-device must be running at the same baud rate (9600 default).
     """
 
-    def __init__(self, serdev="/dev/cu.SLAB_USBtoUART", baud=19200):
+    def __init__(self, port="/dev/tty.usbmodem14502", baud=9600):
         try:
             import serial
         except Exception, e:
             print NEED_PYSERIAL
             raise e
 
-        self.s = serial.Serial(serdev, baud)
-        self.s.setTimeout(4)
+        self.s = serial.Serial(port, baud, dsrdtr=True, timeout=4)
 
 
     def read(self,):
@@ -172,10 +171,12 @@ class SerialConnection(Connection):
         b = bytearray()
         c = None
         while True:
+            # while(self.s.in_waiting==0): pass
             c = self.s.read(1)
 
             # If it's an escape character, get the next char
             if c == ESCAPE_CHAR:
+                # while(self.s.in_waiting==0): pass
                 c = self.s.read(1)
                 if c == '':
                     return
@@ -350,12 +351,13 @@ def parse_cmdline():
                       help="connect to VM running on the desktop via OS pipes")
     parser.add_option("-s", "--serial",
                       dest="serdev",
+                      default="serdev",
                       help="connect to VM over a serial device")
     parser.add_option("-b", "--baud",
                       dest="baud",
                       type="int",
-                      default=19200,
-                      help="baudrate (bps) (default = 19200)",
+                      default=9600,
+                      help="baudrate (bps) (default = 9600)",
                       metavar="BAUD")
 
     (options, args) = parser.parse_args()

@@ -13,7 +13,7 @@
 
 
 PLATFORM ?= desktop
-PMIMGCREATOR := ../tools/pmImgCreator.py
+PMIMGCREATOR := ../tools/pmCoCreator.py
 PMSTDLIB_SOURCES = ../lib/list.py \
                    ../lib/dict.py \
                    ../lib/__bi.py \
@@ -24,11 +24,8 @@ ifeq ($(IPM),true)
 endif
 
 
-SOURCE_IMG := pmstdlib_img.c
-SOURCE_NAT := pmstdlib_nat.c
-
 ARFLAGS = rcs
-SOURCES = $(wildcard *.c) $(SOURCE_IMG) $(SOURCE_NAT)
+SOURCES = $(wildcard *.c) 
 OBJECTS = $(SOURCES:.c=.o)
 INDENT := $(call pathsearch,indent)
 
@@ -50,7 +47,7 @@ endif
 #.INTERMEDIATE: $(SOURCE_IMG) $(SOURCE_NAT)
 
 # Default action is to build the archive from object files
-all : $(SOURCE_IMG) $(SOURCE_NAT) $(PM_LIB_FN)
+all : pm_generated_objs.c pm_generated_types.h
 
 # Translate Python code to bytecoded C images
 bytecode : $(SOURCE_IMG) $(SOURCE_NAT) ../platform/$(PLATFORM)/pmfeatures.h
@@ -59,8 +56,8 @@ bytecode : $(SOURCE_IMG) $(SOURCE_NAT) ../platform/$(PLATFORM)/pmfeatures.h
 $(PM_LIB_FN) : $(PM_LIB_FN)($(OBJECTS))
 
 # Build the standard library into an image file and native function file
-$(SOURCE_IMG) $(SOURCE_NAT) : $(PMSTDLIB_SOURCES) $(PMIMGCREATOR) ../platform/$(PLATFORM)/pmfeatures.py
-	$(PMIMGCREATOR) -f ../platform/$(PLATFORM)/pmfeatures.py -c -s --memspace=flash -o $(SOURCE_IMG) --native-file=$(SOURCE_NAT) $(PMSTDLIB_SOURCES)
+pm_generated_objs.c pm_generated_types.h : $(PMSTDLIB_SOURCES) $(PMIMGCREATOR)
+	$(PMIMGCREATOR) ../platform/$(PLATFORM)  $(PMSTDLIB_SOURCES)
 
 size : $(PM_LIB_FN)
 	@$(SIZE) $(PM_LIB_FN)

@@ -22,10 +22,10 @@ pathsearch = $(firstword $(wildcard $(addsuffix /$(1),$(subst :, ,$(PATH)))))
 VPATH := . src/vm src/lib docs/src
 
 # Default target
-PLATFORM = desktop64
+PLATFORM = avr_da
 
 
-.PHONY: all vm ipm html dox indent TAGS dist check clean
+.PHONY: all vm ipm html dox indent TAGS dist check clean program
 
 all :
 	$(MAKE) -C src/platform/$(PLATFORM)
@@ -78,3 +78,7 @@ ipm-clean :
 # Remove files made by html / dox
 html-clean :
 	$(RM) -rf docs/html
+
+program :
+	$(MAKE) -C src/platform/$(PLATFORM) program
+

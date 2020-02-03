@@ -10,8 +10,7 @@
 PM_LIB_ROOT = pmvm_$(PLATFORM)
 PM_LIB_FN = lib$(PM_LIB_ROOT).a
 PM_LIB_PATH = ../../vm/$(PM_LIB_FN)
-PM_USR_SOURCES = main.py 
-#../../lib/avr_da.py
+PM_USR_SOURCES = main.py avr_da.py
 PMIMGCREATOR := ../../tools/pmImgCreator.py
 PMGENPMFEATURES := ../../tools/pmGenPmFeatures.py
 IPM=true

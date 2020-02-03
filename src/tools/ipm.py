@@ -145,18 +145,17 @@ class PipeConnection(Connection):
 class SerialConnection(Connection):
     """Provides ipm-host to target connection over a serial device.
     This connection should work on any platform that PySerial supports.
-    The ipm-device must be running at the same baud rate (19200 default).
+    The ipm-device must be running at the same baud rate (9600 default).
     """
 
-    def __init__(self, serdev="/dev/cu.SLAB_USBtoUART", baud=19200):
+    def __init__(self, port="/dev/tty.usbmodem14502", baud=9600):
         try:
             import serial
         except Exception, e:
             print NEED_PYSERIAL
             raise e
 
-        self.s = serial.Serial(serdev, baud)
-        self.s.setTimeout(4)
+        self.s = serial.Serial(port, baud, dsrdtr=True, timeout=4)
 
 
     def read(self,):
@@ -165,10 +164,12 @@ class SerialConnection(Connection):
         b = bytearray()
         c = None
         while True:
+            # while(self.s.in_waiting==0): pass
             c = self.s.read(1)
 
             # If it's an escape character, get the next char
             if c == ESCAPE_CHAR:
+                # while(self.s.in_waiting==0): pass
                 c = self.s.read(1)
                 if c == '':
                     return
@@ -345,8 +346,7 @@ class Interactive(cmd.Cmd):
             for c in self.conn.read():
                 self.stdout.write(c)
         except Exception, e:
-            self.stdout.write(
-                "Connection read error, type Ctrl+%s to quit.\n" % EOF_KEY)
+           self.stdout.write( "Connection read error, type Ctrl+%s to quit.\n" % EOF_KEY)
 
 
 def parse_cmdline():
@@ -359,15 +359,17 @@ def parse_cmdline():
                       help="connect to VM running on the desktop via OS pipes")
     parser.add_option("-s", "--serial",
                       dest="serdev",
+                      default="serdev",
                       help="connect to VM over a serial device")
     parser.add_option("-b", "--baud",
                       dest="baud",
                       type="int",
-                      default=19200,
-                      help="baudrate (bps) (default = 19200)",
+                      default=9600,
+                      help="baudrate (bps) (default = 9600)",
                       metavar="BAUD")
     parser.add_option("-f",
                       dest="features_fn",
+                      default="src/platform/avr_da/pmfeatures.py",
                       help="path to the platform's pmfeatures.py file (REQUIRED)",
                       metavar="PMFEATURES")
 
@@ -402,8 +404,7 @@ def ser_test():
         raise e
 
     pic = pmImgCreator.PmImgCreator(os.path.join(PLATFORM_DIR, "desktop/pmfeatures.py"))
-    serconn = serial.Serial("/dev/cu.SLAB_USBtoUART", 19200)
-    serconn.setTimeout(2)
+    serconn = serial.Serial("/dev/tty.usbmodem14502", 9600, timeout=4)
 
     testcode = (
         'print "Hello"\n',

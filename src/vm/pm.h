@@ -26,6 +26,7 @@ extern "C" {
 #include <stdio.h>
 #endif
 #include <stdint.h>
+#include <stdio.h>
 
 /**
  * Value indicating the release of PyMite

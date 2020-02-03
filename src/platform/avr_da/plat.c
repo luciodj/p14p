@@ -68,7 +68,7 @@ plat_init(void)
     /* Assign I/Os, direction */
     /* Set LED pin as output */
     PORTF.DIRSET = 1<<5;   /* out */
-    PORTF.OUTCLR = 0<<5;   /* off */
+    PORTF.OUTCLR = 0<<5;   /* LED = on */
 
 	/* Set up the rev 2 SW pin as well */
 	PORTF.DIRCLR = 1<<6;    /* in */

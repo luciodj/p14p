@@ -4,10 +4,10 @@
 # See the LICENSE file for details.
 
 ## @file
-#  @copybrief avr_da
+#  @copybrief avr
 
-## @package avr_da
-#  @brief AVR DA Access Module
+## @package avr
+#  @brief AVR MCU Access Module
 #
 # Provides generic access to the AVR microcontroller
 #
@@ -18,7 +18,7 @@
 # <b>USAGE</b>
 #
 # \code
-# import avr_da
+# import avr
 # avr.ddrA(0) # Set all pins as input
 # a = avr.portA()
 # avr.ddrA(0xFF) # Set all pins as output
@@ -156,11 +156,11 @@ PmReturn_t  _get_port_register(volatile uint8_t **pin_reg,
     // Find port & direction regs (TODO: Possibly make a PROGMEM lookup table)
     switch(((pPmString_t)pa)->val[0])
     {
-      case 'a':
-      case 'A':
-        if(port_reg) *port_reg = &PORTA.OUT;
-        if(pin_reg) *pin_reg = &PORTA.IN;
-        *direction = &PORTA.DIR;
+      case 'F':
+      case 'f':
+        if(port_reg) *port_reg = &PORTF.OUT;
+        if(pin_reg) *pin_reg = &PORTF.IN;
+        *direction = &PORTF.DIR;
         break;
 
 /*
@@ -226,11 +226,11 @@ PmReturn_t  _get_port_register(volatile uint8_t **pin_reg,
 # Port methods are commented out by default because of the amount of RAM
 # used when the module is loaded. Uncomment the ones you need...
 
-def portA(a):
-    """__NATIVE__
-    return _portX(&PORTA.IN, &PORTA.DIR, &PORTA.OUT);
-    """
-    pass
+# def portA(a):
+#     """__NATIVE__
+#     return _portX(&PORTA.IN, &PORTA.DIR, &PORTA.OUT);
+#     """
+#     pass
 
 # def portB(a):
 #     """__NATIVE__
@@ -262,11 +262,11 @@ def portA(a):
 #     """
 #     pass
 
-def ddrA(a):
-    """__NATIVE__
-    return _ddrX(&PORTA.DIR);
-    """
-    pass
+# def ddrA(a):
+#     """__NATIVE__
+#     return _ddrX(&PORTA.DIR);
+#     """
+#     pass
 
 # def ddrB(a):
 #     """__NATIVE__
@@ -337,41 +337,62 @@ def digitalRead(port, pin):
 # Pin is specified as an integer, 0-7
 # Value is either boolean True/False or Integer 0 or non-zero.
 #
-def digitalWrite(port, pin, value):
+def _pin(pin, value):
     """__NATIVE__
-    volatile uint8_t *port;
-    volatile uint8_t *direction;
+    uint8_t *port;
     uint8_t pin;
-    pPmObj_t pc;
+    pPmObj_t pa;
     PmReturn_t retval = PM_RET_OK;
 
-    NATIVE_SET_TOS(PM_NONE);
-
-    if(NATIVE_GET_NUM_ARGS() != 3)
+    if ( (NATIVE_GET_NUM_ARGS() < 1) || (NATIVE_GET_NUM_ARGS() > 2) )
     {
       PM_RAISE(retval, PM_RET_EX_TYPE);
       return retval;
     }
 
-    retval = _get_port_register(C_NULL, &port, &direction, &pin);
-    if(retval != PM_RET_OK)
-      return retval;
-
-    pc = NATIVE_GET_LOCAL(2);
-
-    /* If the arg is not an integer, raise TypeError */
-    if (OBJ_GET_TYPE(pc) != OBJ_TYPE_INT && OBJ_GET_TYPE(pc) != OBJ_TYPE_BOOL)
+    /* get the pin number */
+    pa = NATIVE_GET_LOCAL(0);
+    if (OBJ_GET_TYPE(pa) != OBJ_TYPE_INT)
     {
       PM_RAISE(retval, PM_RET_EX_TYPE);
       return retval;
     }
 
-    *direction |= (1<<pin); // Set pin to output
+    // Check pin is in range 0-48 (A-F)
+    if(((pPmInt_t)pa)->val < 0 || ((pPmInt_t)pa)->val > 48)
+    {
+        PM_RAISE(retval, PM_RET_EX_VAL);
+        return retval;
+    }
+    pin = ((pPmInt_t)pa)->val;
 
-    if(((pPmInt_t)pc)->val)
-      *port |= 1<<pin;
-    else
-      *port &= ~(1<<pin);
+    /* use vports to simplify port selection */
+    port = (uint8_t*) &PORTA + ((pin >> 3)); 
+    pin &= 0x7;
+
+    /* if assigned a value */
+    if  (NATIVE_GET_NUM_ARGS() == 2) {
+
+      // get the pin value 
+      pa = NATIVE_GET_LOCAL(1); 
+      /* If the arg is not an integer, raise TypeError */
+      if (OBJ_GET_TYPE(pa) != OBJ_TYPE_INT && OBJ_GET_TYPE(pa) != OBJ_TYPE_BOOL)
+      {
+        PM_RAISE(retval, PM_RET_EX_TYPE);
+        return retval;
+      }
+
+      *(port+1) = 1<<pin; // Set pin DIRSET to output
+      
+      if ( ( (pPmInt_t)pa)->val)
+        *(port+5) = 1<<pin;     // OUT set
+      else
+        *(port+6) = 1<<pin;  // OUT clear
+    }
+
+    pa = ( *(port+8) & (1<<pin)) ? PM_TRUE : PM_FALSE;
+    NATIVE_SET_TOS(pa); // Push our result object onto the stack
+
     return retval;
     """
     pass

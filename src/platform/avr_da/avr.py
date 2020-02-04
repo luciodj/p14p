@@ -337,7 +337,7 @@ def digitalRead(port, pin):
 # Pin is specified as an integer, 0-7
 # Value is either boolean True/False or Integer 0 or non-zero.
 #
-def pin(pin, value):
+def _pin(pin, value):
     """__NATIVE__
     uint8_t *port;
     uint8_t pin;

@@ -98,29 +98,6 @@ LDFLAGS += -L../../vm -l$(PM_LIB_ROOT) -L.
 
 # Programming support using drag 'n drop. Settings and variables.
 
-# AVRDUDE_PORT = /dev/tty.usbserial-A6008hox
-# AVRDUDE_WRITE_FLASH = -U flash:w:$(TARGET).hex
-#AVRDUDE_WRITE_EEPROM = -U eeprom:w:$(TARGET).eep
-
-# Uncomment the following if you want avrdude's erase cycle counter.
-# Note that this counter needs to be initialized first using -Yn,
-# see avrdude manual.
-#AVRDUDE_ERASE_COUNTER = -y
-
-# Uncomment the following if you do /not/ wish a verification to be
-# performed after programming the device.
-#AVRDUDE_NO_VERIFY = -V
-
-# Increase verbosity level.  Please use this when submitting bug
-# reports about avrdude. See <http://savannah.nongnu.org/projects/avrdude>
-# to submit bug reports.
-#AVRDUDE_VERBOSE = -v -v
-
-# AVRDUDE_BASIC = -p $(MCU) -P $(AVRDUDE_PORT) -b $(AVRDUDE_BAUD) -c $(AVRDUDE_PROGRAMMER)
-# AVRDUDE_FLAGS = $(AVRDUDE_BASIC) $(AVRDUDE_NO_VERIFY) $(AVRDUDE_VERBOSE) $(AVRDUDE_ERASE_COUNTER)
-
-
-
 SHELL = sh
 CC = avr-gcc
 OBJCOPY = avr-objcopy
@@ -128,7 +105,6 @@ OBJDUMP = avr-objdump
 SIZE = avr-size
 AR = avr-ar
 NM = avr-nm
-# AVRDUDE = avrdude
 REMOVE = rm -f
 MV = mv -f
 COPY = cp

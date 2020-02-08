@@ -18,13 +18,26 @@
 # <b>USAGE</b>
 #
 # \code
-# import avr
+# from avr import *
+# LED.set(LED.ON)
+# LED.set(LED.OFF)
+# LED.toggle()
+# LED.get() -> True/False
+#
+# BTN.pressed() -> True/False
+#
+# avr.delay(500) # Half second pause
+#
+# pin enumeration PORTA..F -> 0, 8, 16, 24 .. 40
+# pin(pin_no, value) -> set pin = value
+# pin(pin_no) -> True / False 
+#
+# legacy
 # avr.ddrA(0) # Set all pins as input
 # a = avr.portA()
 # avr.ddrA(0xFF) # Set all pins as output
 # avr.portA(42)
 #
-# avr.delay(500) # Half second pause
 #
 # if avr.digitalRead('A', 3):
 #   avr.digitalWrite('D', 0, True)
@@ -222,6 +235,35 @@ PmReturn_t  _get_port_register(volatile uint8_t **pin_reg,
 
 """
 
+# define AVR-DA Curiosity specific LED pin and value
+class Led() :
+  ON  = 0
+  OFF = 1 
+  
+  def __init__(self, pin_no):
+    self.pin_no = pin_no 
+
+  def set(self, value):
+    pin(self.pin_no, value)
+
+  def toggle(self):
+      pin(self.pin_no, not pin(self.pin_no))
+
+  def get(self):
+    return pin(self.pin_no)
+
+LED = Led(45)
+
+class Button() :
+
+  def __init__(self, pin_no):
+    self.pin_no = pin_no
+
+  def pressed(self):
+    return not pin(self.pin_no)
+
+BTN = Button(46)
+  
 
 # Port methods are commented out by default because of the amount of RAM
 # used when the module is loaded. Uncomment the ones you need...
@@ -366,8 +408,8 @@ def pin(pin, value):
     }
     pin = ((pPmInt_t)pa)->val;
 
-    /* use vports to simplify port selection */
-    port = (uint8_t*) &PORTA + ((pin >> 3)); 
+    /* split in port and pin */
+    port = (uint8_t*) (&PORTA + (pin >> 3)); 
     pin &= 0x7;
 
     /* if assigned a value */
@@ -387,7 +429,7 @@ def pin(pin, value):
       if ( ( (pPmInt_t)pa)->val)
         *(port+5) = 1<<pin;     // OUT set
       else
-        *(port+6) = 1<<pin;  // OUT clear
+        *(port+6) = 1<<pin;     // OUT clear
     }
 
     pa = ( *(port+8) & (1<<pin)) ? PM_TRUE : PM_FALSE;

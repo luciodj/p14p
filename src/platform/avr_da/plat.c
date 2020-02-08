@@ -104,7 +104,7 @@ plat_init(void)
                 | 0 << TCA_SINGLE_CMP2EN_bp /* Compare 2 disabled */
                 | TCA_SINGLE_WGMODE_SINGLESLOPE_gc; /* Waveform generation mode: single slope */
     TCA0.SINGLE.PER = 500; /* 1ms Period @ 4MHz */
-
+    TCA0.SINGLE.INTCTRL = 1; /* enable OVF interrupt */
     /* Global interrupt enable */
     sei();
     // puts("Plat Init");

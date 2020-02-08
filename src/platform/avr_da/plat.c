@@ -61,8 +61,10 @@ FILE avr_uart = FDEV_SETUP_STREAM(uart_putc, uart_getc, _FDEV_SETUP_RW);
 PmReturn_t
 plat_init(void)
 {
+    /* unlock Configuration Change Protection */
+    CPU_CCP = CCP_IOREG_gc; 
     /* Set the clock speed */
-    CLKCTRL.OSCHFCTRLA = 3<<2;
+    CLKCTRL.OSCHFCTRLA = 9 << 2; /* 24MHz */
 
     /* Assign I/Os, direction */
     /* Set LED pin as output */

@@ -21,8 +21,8 @@ DEV_PACK = "/Applications/microchip/mplabx/v5.35/packs/Microchip/AVR-Dx_DFP/1.0.
 MCU = avr128da48
 FORMAT = ihex
 TARGET = main
-F_CPU = 4000000UL
 SRC = $(TARGET).c plat.c pm_generated_objs.c pm_generated_types.h
+F_CPU = 24000000UL
 ASRC =
 OPT = s
 

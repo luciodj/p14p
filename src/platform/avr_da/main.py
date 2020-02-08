@@ -11,5 +11,5 @@
 # is seen in the file COPYING up one directory from this.
 
 import ipm
-
-ipm.ipm()
+import avr
+ipm.ipm({"LED":avr.LED, "BTN":avr.BTN, "pin":avr.pin})

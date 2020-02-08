@@ -11,6 +11,5 @@
 # is seen in the file COPYING up one directory from this.
 
 import ipm
-from avr import *
 
 ipm.ipm()

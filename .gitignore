@@ -1,0 +1,11 @@
+*.o
+*.a
+*.pyc
+*.hex
+*.elf
+.DS_Store
+pmfeatures.h
+main_nat.c
+main_img.c
+pmstdlib_img.c
+pmstdlib_nat.c

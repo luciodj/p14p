@@ -5,7 +5,6 @@
 
 ## @file
 #  @copybrief avr
-
 ## @package avr
 #  @brief AVR MCU Access Module
 #
@@ -28,355 +27,72 @@
 #
 # avr.delay(500) # Half second pause
 #
-# pin enumeration PORTA..F -> 0, 8, 16, 24 .. 40
+# pin enumeration PORTA..F -> 0, 8, 16, 24 .. 47
 # pin(pin_no, value) -> set pin = value
 # pin(pin_no) -> True / False 
 #
-# legacy
-# avr.ddrA(0) # Set all pins as input
-# a = avr.portA()
-# avr.ddrA(0xFF) # Set all pins as output
-# avr.portA(42)
-#
-#
-# if avr.digitalRead('A', 3):
-#   avr.digitalWrite('D', 0, True)
 # \endcode
-
 
 """__NATIVE__
 #include <avr/io.h>
 #define __DELAY_BACKWARD_COMPATIBLE__
 #include <util/delay.h>
-
-/*
- * Common method for all port register operations
- */
-PmReturn_t
-_portX(volatile uint8_t *port,
-       volatile uint8_t *direction,
-       volatile uint8_t *pin)
-{
-   pPmObj_t pa;
-   PmReturn_t retval = PM_RET_OK;
-
-   switch (NATIVE_GET_NUM_ARGS())
-   {
-      /* If no argument is present, return PIN reg value */
-      case 0:
-
-        /* Read port and create a Python integer from its value */
-        retval = int_new(*pin, &pa);
-
-        /* Return the integer on the stack */
-        NATIVE_SET_TOS(pa);
-        break;
-
-      /* If one argument is present, set port to that value */
-      case 1:
-         pa = NATIVE_GET_LOCAL(0);
-         /* If the arg is not an integer, raise TypeError */
-         if (OBJ_GET_TYPE(pa) != OBJ_TYPE_INT)
-         {
-           PM_RAISE(retval, PM_RET_EX_TYPE);
-           break;
-         }
-
-         NATIVE_SET_TOS(PM_NONE);
-
-         /* Set PORT to the low byte of the integer value */
-         *port = ((pPmInt_t)pa)->val;
-         break;
-
-      /* If an invalid number of args are present, raise TypeError */
-      default:
-         PM_RAISE(retval, PM_RET_EX_TYPE);
-         break;
-    }
-
-    return retval;
-}
-
-
-/*
- * Set a DDR register to the first Python argument
- */
-PmReturn_t _ddrX(volatile uint8_t *direction)
-{
-   PmReturn_t retval = PM_RET_OK;
-   pPmObj_t pa;
-   if(NATIVE_GET_NUM_ARGS() != 1)
-   {
-      PM_RAISE(retval, PM_RET_EX_TYPE);
-      return retval;
-   }
-
-   pa = NATIVE_GET_LOCAL(0);
-   if (OBJ_GET_TYPE(pa) != OBJ_TYPE_INT)
-   {
-      PM_RAISE(retval, PM_RET_EX_TYPE);
-      return retval;
-   }
-
-   *direction = (uint8_t) ((pPmInt_t)pa)->val;
-   NATIVE_SET_TOS(PM_NONE);
-   return retval;
-}
-
-
-
-/*
- * Loads the correct AVR port registers & direction address from the first
- * Python argument, and integer pin number (0-7) from second argument.
- * Port name argument is expected to be a single-character string with the port
- * letter ([a-dA-D])
- *
- * Both port_reg & port_reg arguments are optional.
- *
- * TODO: Look into putting this into a table in PROGMEM instead of a switch
- * statement
- */
-PmReturn_t  _get_port_register(volatile uint8_t **pin_reg,
-                               volatile uint8_t **port_reg,
-                               volatile uint8_t **direction,
-                               uint8_t *pin)
-{
-    pPmObj_t pa;
-    pPmObj_t pb;
-    PmReturn_t retval = PM_RET_OK;
-
-    pa = NATIVE_GET_LOCAL(0);
-    if (OBJ_GET_TYPE(pa) != OBJ_TYPE_STR)
-    {
-      PM_RAISE(retval, PM_RET_EX_TYPE);
-      return retval;
-    }
-
-    pb = NATIVE_GET_LOCAL(1);
-    if (OBJ_GET_TYPE(pb) != OBJ_TYPE_INT)
-    {
-      PM_RAISE(retval, PM_RET_EX_TYPE);
-      return retval;
-    }
-
-    // Only single-character strings for the port number
-    if ((((pPmString_t)pa)->length) != 1)
-    {
-      PM_RAISE(retval, PM_RET_EX_VAL);
-      return retval;
-    }
-
-    // Find port & direction regs (TODO: Possibly make a PROGMEM lookup table)
-    switch(((pPmString_t)pa)->val[0])
-    {
-      case 'F':
-      case 'f':
-        if(port_reg) *port_reg = &PORTF.OUT;
-        if(pin_reg) *pin_reg = &PORTF.IN;
-        *direction = &PORTF.DIR;
-        break;
-
-/*
-      case 'b':
-      case 'B':
-        if(port_reg) *port_reg = &PORTB;
-        if(pin_reg) *pin_reg = &PINB;
-        *direction = &DDRB;
-        break;
-      case 'c':
-      case 'C':
-#if defined(PORTC) && defined(PINC) && defined(DDRC)
-        if(port_reg) *port_reg = &PORTC;
-        if(pin_reg) *pin_reg = &PINC;
-        *direction = &DDRC;
-#endif
-        break;
-      case 'd':
-      case 'D':
-#if defined(PORTD) && defined(PIND) && defined(DDRD)
-        if(port_reg) *port_reg = &PORTD;
-        if(pin_reg) *pin_reg = &PIND;
-        *direction = &DDRD;
-#endif
-        break;
-      case 'e':
-      case 'E':
-#if defined(PORTE) && defined(PINE) && defined(DDRE)
-        if(port_reg) *port_reg = &PORTE;
-        if(pin_reg) *pin_reg = &PINE;
-        *direction = &DDRE;
-#endif
-        break;
-      case 'f':
-      case 'F':
-#if defined(PORTF) && defined(PINF) && defined(DDRF)
-        if(port_reg) *port_reg = &PORTF;
-        if(pin_reg) *pin_reg = &PINF;
-        *direction = &DDRF;
-#endif
-        break;
-
-*/
-      default:
-        PM_RAISE(retval, PM_RET_EX_VAL);
-        return retval;
-    }
-
-    // Check pin is in range
-    if(((pPmInt_t)pb)->val < 0 || ((pPmInt_t)pb)->val > 7)
-    {
-        PM_RAISE(retval, PM_RET_EX_VAL);
-        return retval;
-    }
-    *pin = ((pPmInt_t)pb)->val;
-
-    return retval;
-}
-
 """
 
+class Pin() :
+    HIGH = 1
+    LOW  = 0
+    # configuration
+    INPUT      = 0
+    OUTPUT     = 1<<0
+    START_HIGH = 1<<1
+    INVERT     = 1<<2
+    PULL_UP    = 1<<3
+    IOC        = 1<<4
+
+    def __init__(self, pin_no, config=Pin.INPUT):
+        self.pin_no = pin_no
+        if config & Pin.START_HIGH:
+            _pin(pin_no, Pin.HIGH)
+        _pin_config(pin_no, config)
+    
+    def set(self, value):
+        _pin(self.pin_no, value)
+
+    def toggle(self):
+        _pin(self.pin_no, not _pin(self.pin_no))
+
+    def get(self):
+        return _pin(self.pin_no)
+
 # define AVR-DA Curiosity specific LED pin and value
-class Led() :
-  ON  = 0
-  OFF = 1 
-  
-  def __init__(self, pin_no):
-    self.pin_no = pin_no 
+class Led(Pin) :
+    ON  = 0
+    OFF = 1 
 
-  def set(self, value):
-    pin(self.pin_no, value)
-
-  def toggle(self):
-      pin(self.pin_no, not pin(self.pin_no))
-
-  def get(self):
-    return pin(self.pin_no)
-
+    def __init__(self, pin_no):
+        super().__init__(pin_no, config=Pin.OUTPUT)
+            
+ # Default LED present on Curiosity board
 LED = Led(45)
 
 class Button() :
+    "Handle simple Push buttons"
 
-  def __init__(self, pin_no):
-    self.pin_no = pin_no
+    def __init__(self, pin_no):
+        self.pin_no = pin_no
 
-  def pressed(self):
-    return not pin(self.pin_no)
+    def pressed(self):
+        return not _pin(self.pin_no)
 
+# Default button present on Curiosity board
 BTN = Button(46)
-  
 
-# Port methods are commented out by default because of the amount of RAM
-# used when the module is loaded. Uncomment the ones you need...
-
-# def portA(a):
-#     """__NATIVE__
-#     return _portX(&PORTA.IN, &PORTA.DIR, &PORTA.OUT);
-#     """
-#     pass
-
-# def portB(a):
-#     """__NATIVE__
-#     return _portX(&PORTB, &DDRB, &PINB);
-#     """
-#     pass
-
-# def portC(a):
-#     """__NATIVE__
-#     return _portX(&PORTC, &DDRC, &PINC);
-#     """
-#     pass
-
-# def portD(a):
-#     """__NATIVE__
-#     return _portX(&PORTD, &DDRD, &PIND);
-#     """
-#     pass
-
-# def portE(a):
-#     """__NATIVE__
-#     return _portX(&PORTE, &DDRE, &PINE);
-#     """
-#     pass
-
-# def portF(a):
-#     """__NATIVE__
-#     return _portX(&PORTF, &DDRF, &PINF);
-#     """
-#     pass
-
-# def ddrA(a):
-#     """__NATIVE__
-#     return _ddrX(&PORTA.DIR);
-#     """
-#     pass
-
-# def ddrB(a):
-#     """__NATIVE__
-#     return _ddrX(&DDRB);
-#     """
-#     pass
-
-# def ddrC(a):
-#     """__NATIVE__
-#     return _ddrX(&DDRC);
-#     """
-#     pass
-
-
-# def ddrD(a):
-#     """__NATIVE__
-#     return _ddrX(&DDRD);
-#     """
-#     pass
-
-# def ddrE(a):
-#     """__NATIVE__
-#     return _ddrX(&DDRE);
-#     """
-#     pass
-
-# def ddrF(a):
-#     """__NATIVE__
-#     return _ddrX(&DDRF);
-#     """
-#     pass
-
-
-# Reads a single pin of a particular AVR port
+# 
+# Low level routines to access AVR-DA and Curiosity assets
 #
-# Port is specified as a single-character string, A-F.
-# Pin is specified as an integer, 0-7
+# Pin is specified as an integer, 0-47 (A0=0, A1=1 .. B0=8, B1=9 ... )
 #
-# Return value is boolean True/False, can be treated as 1/0
-def digitalRead(port, pin):
-    """__NATIVE__
-    volatile uint8_t *port;
-    volatile uint8_t *direction;
-    uint8_t pin;
-    PmReturn_t retval = PM_RET_OK;
-
-    if(NATIVE_GET_NUM_ARGS() != 2)
-    {
-      PM_RAISE(retval, PM_RET_EX_TYPE);
-      return retval;
-    }
-
-    retval = _get_port_register(&port, C_NULL, &direction, &pin);
-    if(retval != PM_RET_OK)
-      return retval;
-
-    *direction &= ~(1<<pin); // Set pin to input
-    pPmObj_t pa = (*port & (1<<pin)) ? PM_TRUE : PM_FALSE;
-    NATIVE_SET_TOS(pa); // Push our result object onto the stack
-    return retval;
-    """
-    pass
-
-
-# Writes a single pin of a particular AVR port
-#
-# Port is specified as a single-character string, A-F.
-# Pin is specified as an integer, 0-7
 # Value is either boolean True/False or Integer 0 or non-zero.
 #
 def _pin(pin, value):
@@ -386,23 +102,20 @@ def _pin(pin, value):
     pPmObj_t pa;
     PmReturn_t retval = PM_RET_OK;
 
-    if ( (NATIVE_GET_NUM_ARGS() < 1) || (NATIVE_GET_NUM_ARGS() > 2) )
-    {
-      PM_RAISE(retval, PM_RET_EX_TYPE);
-      return retval;
+    if ( (NATIVE_GET_NUM_ARGS() < 1) || (NATIVE_GET_NUM_ARGS() > 2) ) {
+        PM_RAISE(retval, PM_RET_EX_TYPE);
+        return retval;
     }
 
     /* get the pin number */
     pa = NATIVE_GET_LOCAL(0);
-    if (OBJ_GET_TYPE(pa) != OBJ_TYPE_INT)
-    {
-      PM_RAISE(retval, PM_RET_EX_TYPE);
-      return retval;
+    if (OBJ_GET_TYPE(pa) != OBJ_TYPE_INT) {
+        PM_RAISE(retval, PM_RET_EX_TYPE);
+        return retval;
     }
 
-    // Check pin is in range 0-48 (A-F)
-    if(((pPmInt_t)pa)->val < 0 || ((pPmInt_t)pa)->val > 48)
-    {
+    /* Check pin is in range 0-47 (A-F) */
+    if ( ((pPmInt_t)pa)->val < 0 || ((pPmInt_t)pa)->val > 48 ) {
         PM_RAISE(retval, PM_RET_EX_VAL);
         return retval;
     }
@@ -413,23 +126,21 @@ def _pin(pin, value):
     pin &= 0x7;
 
     /* if assigned a value */
-    if  (NATIVE_GET_NUM_ARGS() == 2) {
+    if (NATIVE_GET_NUM_ARGS() == 2) {
+        // get the pin value 
+        pa = NATIVE_GET_LOCAL(1); 
+        /* If the arg is not an integer or boolean, raise TypeError */
+        if (OBJ_GET_TYPE(pa) != OBJ_TYPE_INT && OBJ_GET_TYPE(pa) != OBJ_TYPE_BOOL ) { 
+            PM_RAISE(retval, PM_RET_EX_TYPE);
+            return retval;
+        }
 
-      // get the pin value 
-      pa = NATIVE_GET_LOCAL(1); 
-      /* If the arg is not an integer, raise TypeError */
-      if (OBJ_GET_TYPE(pa) != OBJ_TYPE_INT && OBJ_GET_TYPE(pa) != OBJ_TYPE_BOOL)
-      {
-        PM_RAISE(retval, PM_RET_EX_TYPE);
-        return retval;
-      }
-
-      *(port+1) = 1<<pin; // Set pin DIRSET to output
-      
-      if ( ( (pPmInt_t)pa)->val)
-        *(port+5) = 1<<pin;     // OUT set
-      else
-        *(port+6) = 1<<pin;     // OUT clear
+        *(port+1) = 1<<pin; // Set pin DIRSET to output
+        
+        if ( ((pPmInt_t)pa)->val )
+            *(port+5) = 1<<pin;     // OUT set
+        else
+            *(port+6) = 1<<pin;     // OUT clear
     }
 
     pa = ( *(port+8) & (1<<pin)) ? PM_TRUE : PM_FALSE;
@@ -439,29 +150,87 @@ def _pin(pin, value):
     """
     pass
 
+def _pin_config(pin, config):
+    """__NATIVE__
+    uint8_t *port;
+    uint8_t pin, config, ctrl;
+    pPmObj_t pa;
+    PmReturn_t retval = PM_RET_OK;
+
+    if ( NATIVE_GET_NUM_ARGS() != 2 ) {
+        PM_RAISE(retval, PM_RET_EX_TYPE);
+        return retval;
+    }
+
+    /* get the pin number */
+    pa = NATIVE_GET_LOCAL(0);
+    if (OBJ_GET_TYPE(pa) != OBJ_TYPE_INT) {
+        PM_RAISE(retval, PM_RET_EX_TYPE);
+        return retval;
+    }
+
+    /* Check pin is in range 0-47 (A-F) */
+    if ( ((pPmInt_t)pa)->val < 0 || ((pPmInt_t)pa)->val > 48 ) {
+        PM_RAISE(retval, PM_RET_EX_VAL);
+        return retval;
+    }
+    pin = ((pPmInt_t)pa)->val;
+
+    /* split in port and pin */
+    port = (uint8_t*) (&PORTA + (pin >> 3)); 
+    pin &= 0x7;
+
+    // get the config value 
+    pa = NATIVE_GET_LOCAL(1); 
+    /* If the arg is not an integer , raise TypeError */
+    if (OBJ_GET_TYPE(pa) != OBJ_TYPE_INT ) { 
+        PM_RAISE(retval, PM_RET_EX_TYPE);
+        return retval;
+    }
+    config = ((pPmInt_t)pa)->val;
+    if ( config & 1 ) 
+        *(port+1) = 1<<pin; // Set  DIRSET to output
+    else 
+        *(port+2) = 1<<pin; // Set  DIRCLR to input
+    
+
+/*  
+    INVERT     = 1<<2
+    PULL_UP    = 1<<3 
+    IOC        = 1<<4 
+*/
+    ctrl = 0;
+    if ( config & 1<<2)         // INVERT
+        ctrl += 1<<7;     
+    if ( config & 1<<3)         // PULLUP
+        ctrl += 1<<3;     
+    if ( config & 1<<4)         // IOC 
+        ctrl += 3;              // falling edge
+    *(port+16+pin) = ctrl;
+
+    NATIVE_SET_TOS(PM_NONE);
+    return retval;
+    """
+    pass
 
 def delay(ms):
     """__NATIVE__
     PmReturn_t retval = PM_RET_OK;
 
-    if(NATIVE_GET_NUM_ARGS() != 1)
-    {
-      PM_RAISE(retval, PM_RET_EX_TYPE);
-      return retval;
+    if(NATIVE_GET_NUM_ARGS() != 1) {
+        PM_RAISE(retval, PM_RET_EX_TYPE);
+        return retval;
     }
 
     pPmObj_t pa = NATIVE_GET_LOCAL(0);
-    if (OBJ_GET_TYPE(pa) == OBJ_TYPE_INT)
-    {
-      _delay_ms((double) ((pPmInt_t)pa)->val);
+    if (OBJ_GET_TYPE(pa) == OBJ_TYPE_INT) {
+        _delay_ms((double) ((pPmInt_t)pa)->val);
     }
-    else if (OBJ_GET_TYPE(pa) == OBJ_TYPE_FLT)
-    {
-      _delay_ms((double) ((pPmFloat_t)pa)->val);
+    else if (OBJ_GET_TYPE(pa) == OBJ_TYPE_FLT) {
+        _delay_ms((double) ((pPmFloat_t)pa)->val);
     }
-    else
-    {
-      PM_RAISE(retval, PM_RET_EX_TYPE);
+    else {
+        PM_RAISE(retval, PM_RET_EX_TYPE);
     }
 
     NATIVE_SET_TOS(PM_NONE);
@@ -469,6 +238,140 @@ def delay(ms):
     """
     pass
 
+# 
+# SPI
+#
+class SPI():
+    "Synchronous Port Interface"
+    def __init__(self, instance, sck, mosi, miso, mode=0, frequency=1000000):
+        self.instance = instance
+        _pin_config(sck, config=Pin.OUTPUT)
+        _pin_config(mosi, config=Pin.OUTPUT)
+        _pin_config(miso, config=Pin.INPUT)
+        _spi_config(instance, mode, frequency)
+
+    def transfer(data):
+        return _spi_transfer(self.instance, data)
 
 
-# :mode=c:
+# example 
+#oled = SPI(0, mode=0, sck=40, mosi=41, miso=42, frequency=4000000)
+#oled.transfer(bytearray(1,2,3,4))
+
+def _spi_config(instance, mode, frequency):
+    """__NATIVE__
+    PmReturn_t retval = PM_RET_OK;
+    uint8_t instance, mode;
+    uint32_t frequency;
+
+    if(NATIVE_GET_NUM_ARGS() != 3) {
+        PM_RAISE(retval, PM_RET_EX_TYPE);
+        return retval;
+    }
+
+    pPmObj_t pa = NATIVE_GET_LOCAL(0);
+    if (OBJ_GET_TYPE(pa) == OBJ_TYPE_INT) {
+        instance =  ((pPmInt_t)pa)->val);
+    }
+    else {
+        PM_RAISE(retval, PM_RET_EX_TYPE);
+    }
+
+    pa = NATIVE_GET_LOCAL(1);
+    if (OBJ_GET_TYPE(pa) == OBJ_TYPE_INT) {
+        mode =  ((pPmInt_t)pa)->val);
+    }
+    else {
+        PM_RAISE(retval, PM_RET_EX_TYPE);
+    }
+
+    pa = NATIVE_GET_LOCAL(2);
+    if (OBJ_GET_TYPE(pa) == OBJ_TYPE_INT) {
+        frequency =  ((pPmInt_t)pa)->val);
+    }
+    else {
+        PM_RAISE(retval, PM_RET_EX_TYPE);
+    }
+    /* get pointer to SPI instance registers */
+    uint8_t *spi = (uint8_t *)(SPI0+instance);
+
+    /* find best prescaler so that spi_clock < frequency */
+    uint32_t spi_clock = FCU/4;
+    uint8_t  prescaler = 0;
+    while (spi_clock > frequency) {
+        spi_clock /= 4;
+        prescaler++;
+    }
+    if (prescaler >= 3) { 
+        prescaler = 3;  // 1:128  is really the best/slowest we can do
+        spi_clock = FCU/128;
+    }
+    if (spi_clock*2 <= frequency) {
+        prescaler += 8; // CLK*2 feature allows us to find middle points
+    }
+    // SPI.CTRLA
+    *spi = (0<<6) + (1<<5) + (prescaler<<1) + 1; // MSB, master, CLK*2|PRE, ENABLE
+    *(spi+1) = mode & 0x03;
+
+    NATIVE_SET_TOS(PM_NONE);
+    return retval;
+    """
+    pass
+
+def _spi_transfer(instance, data):
+    """__NATIVE__
+    PmReturn_t retval = PM_RET_OK;
+    uint8_t instance;
+    uint8_t objid;
+    pPmBytearray_t pba = C_NULL;
+    pPmBytes_t pb = C_NULL;
+
+    if(NATIVE_GET_NUM_ARGS() != 2) {
+        PM_RAISE(retval, PM_RET_EX_TYPE);
+        return retval;
+    }
+
+    pPmObj_t pi = NATIVE_GET_LOCAL(0);
+    if (OBJ_GET_TYPE(pi) == OBJ_TYPE_INT) {
+        instance =  ((pPmInt_t)pi)->val);
+    }
+    else {
+        PM_RAISE(retval, PM_RET_EX_TYPE);
+    }
+    /* get pointer to SPI instance registers */
+    uint8_t *spi = (uint8_t *)(SPI0+instance);
+
+    pPmObj_t po = NATIVE_GET_LOCAL(1);
+    if (OBJ_GET_TYPE(po) != OBJ_TYPE_BYA) {
+        PM_RAISE(retval, PM_RET_EX_TYPE);
+    }
+
+    uint8_t n = ((pPmByteArray_t)pb)->length;
+
+    /* Allocate a result bytearray */
+    retval = heap_getChunk(sizeof(PmBytearray_t), (uint8_t **)&pba);
+    PM_RETURN_IF_ERROR(retval);
+    OBJ_SET_TYPE(pba, OBJ_TYPE_BYA);
+    pba->length = n;
+    pba->val = C_NULL;
+
+    /* Allocate the bytes container */
+    heap_gcPushTempRoot((pPmObj_t)pba, &objid);
+    retval = bytes_new(n, (pPmObj_t *)&pb);
+    heap_gcPopTempRoot(objid);
+    PM_RETURN_IF_ERROR(retval);
+    pba->val = pb;
+
+    // perform the transfer
+    for(int i=0; i<n; i++) {
+        bytearray_getItem(po, i, &pi);
+        *(spi+4) = (pPmInt(pi))->val; // write data
+        while( *(spi+3) & 0x80 == 0); // wait 
+        (pPmInt(pi))->val = *(spi+4); // read back 
+        bytearray_setItem(pa, i, pi);
+    }
+
+    NATIVE_SET_TOS(pa);
+    return retval;
+    """
+    pass

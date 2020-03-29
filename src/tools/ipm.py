@@ -17,12 +17,6 @@ sends that over the connection where the target device loads and interprets it.
 The target device then packages any result, sends it to the host computer
 and the host computer prints the result.
 
-REQUIRES: pySerial package from http://pyserial.sourceforge.net/
-
-::
-
-    $ easy_install pyserial
-
 """
 
 ## @file
@@ -39,9 +33,8 @@ REQUIRES: pySerial package from http://pyserial.sourceforge.net/
 #  The target device then packages any result, sends it to the host computer
 #  and the host computer prints the result.
 #
-#  REQUIRES: pySerial package from http://pyserial.sourceforge.net/
 #
-#    $ easy_install pyserial
+#    $ pip install pyserial
 #
 
 

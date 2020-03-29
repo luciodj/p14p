@@ -4,7 +4,6 @@
 # is public domain), believed to be neutral to any flavor of "make"
 # (GNU make, BSD make, SysV make)
 
-
 # PyMite Configuration
 # PLATFORM := $(notdir $(CURDIR))
 PM_LIB_ROOT = pmvm_$(PLATFORM)
@@ -25,6 +24,14 @@ SRC = $(TARGET).c plat.c pm_generated_objs.c pm_generated_types.h
 F_CPU = 24000000UL
 ASRC =
 OPT = s
+
+# This project uses the AVR-Dx_DFP include files provided in the device series support pack
+# the latest version at this time is: 1.0.18
+# this is automatically installed with MPLABX v5.35 or later
+DEVPACK = "/Applications/microchip/mplabx/v5.35/packs/Microchip/AVR-Dx_DFP/1.0.18"
+# otherwise you can download it from: https://packs.download.microchip.com/ 
+# note: manually installed packs are found in the user home folder -> uncomment the line below
+# DEVPACK = $(HOME)/.mchp_packs/Microchip/AVR-Dx_DFP/1.0.18
 
 # Debugging format.
 # Native formats for AVR-GCC's -g are stabs [default], or dwarf-2.
@@ -47,7 +54,7 @@ endif
 
 
 # Place -I options here
-CINCS = -I../../vm -I "$(abspath .)" -I$(DEV_PACK)/include  -B $(DEV_PACK)/avr-gcc/dev/avr128da48
+CINCS = -I../../vm -I "$(abspath .)" -I $(DEVPACK)/include -B $(DEVPACK)/avr-gcc/dev/avr128da48
 
 
 CDEBUG = -g$(DEBUG_FMT)

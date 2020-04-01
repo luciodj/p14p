@@ -5,7 +5,7 @@
 # (GNU make, BSD make, SysV make)
 
 # PyMite Configuration
-# PLATFORM := $(notdir $(CURDIR))
+PLATFORM = avr_da
 PM_LIB_ROOT = pmvm_$(PLATFORM)
 PM_LIB_FN = lib$(PM_LIB_ROOT).a
 PM_LIB_PATH = ../../vm/$(PM_LIB_FN)

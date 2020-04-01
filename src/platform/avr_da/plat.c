@@ -33,10 +33,10 @@
 
 #include "pm.h"
 
-/* Hint: 1,000,000 �s/s * 256 T/C0 clock cycles per tick * 8 CPU clocks per
+/* Hint: 1,000,000 /s * 256 T/C0 clock cycles per tick * 8 CPU clocks per
  * T/C0 clock cycle / x,000,000 CPU clock cycles per second -> �s per tick
  */
-#define PLAT_TIME_PER_TICK_USEC (1000000ULL*256ULL*8ULL/F_CPU)
+#define PLAT_TIME_PER_TICK_USEC (1000)
 
 
 /* Configure stdin, stdout, stderr */
@@ -61,6 +61,11 @@ FILE avr_uart = FDEV_SETUP_STREAM(uart_putc, uart_getc, _FDEV_SETUP_RW);
 PmReturn_t
 plat_init(void)
 {
+    /* CDC UART */
+    PORTB.OUTSET = 1<<0; /* RB0 start high */
+    PORTB.DIRSET = 1<<0; /* RB0 output */
+    PORTB.DIRCLR = 1<<1; /* RB1 input */
+
     /* unlock Configuration Change Protection */
     CPU_CCP = CCP_IOREG_gc; 
     /* Set the clock speed */
@@ -76,11 +81,6 @@ plat_init(void)
     PORTF.PIN6CTRL |= PORT_PULLUPEN_bm; /* pull up */
     // PORTF.PIN6CTRL = PORT_ISC_FALLING_gc | PORT_PULLUPEN_bm; /* enable interrupt on pin */
 
-    /* CDC UART */
-    PORTB.OUTSET = 1<<0; /* RB0 start high */
-    PORTB.DIRSET = 1<<0; /* RB0 output */
-    PORTB.DIRCLR = 1<<1; /* RB1 input */
-
     /* Set the baud rate register */
 	uint32_t cdc_baud = F_CPU * 4;
 	cdc_baud = cdc_baud / CDC_BAUD;
@@ -93,8 +93,8 @@ plat_init(void)
 
     stdin = stdout = stderr = &avr_uart;
 
-    /* Set TCA prescaler to div64  Enable TCA interrupt */
-    TCA0.SINGLE.CTRLA = TCA_SINGLE_CLKSEL_DIV8_gc /* Clock Selection: System Clock / 8 */
+    /* Set TCA prescaler to div8  Enable TCA interrupt */
+    TCA0.SINGLE.CTRLA = TCA_SINGLE_CLKSEL_DIV8_gc /* Clock Selection: System Clock / 8 -> 3MHz*/
                 | 1 << TCA_SINGLE_ENABLE_bp; /* Module Enable: enabled */
 
     TCA0.SINGLE.CTRLB = 0 << TCA_SINGLE_ALUPD_bp /* Auto Lock Update: disabled */
@@ -102,7 +102,7 @@ plat_init(void)
                 | 0 << TCA_SINGLE_CMP1EN_bp /* Compare 1 disabled */
                 | 0 << TCA_SINGLE_CMP2EN_bp /* Compare 2 disabled */
                 | TCA_SINGLE_WGMODE_SINGLESLOPE_gc; /* Waveform generation mode: single slope */
-    TCA0.SINGLE.PER = 500; /* 1ms Period @ 4MHz */
+    TCA0.SINGLE.PER = 3000; /* 1ms Period @ 3MHz */
     TCA0.SINGLE.INTCTRL = 1; /* enable OVF interrupt */
     /* Global interrupt enable */
     sei();
@@ -141,6 +141,7 @@ ISR(TCA0_OVF_vect)
      * interrupt.
      */
     pm_vmPeriodic(PLAT_TIME_PER_TICK_USEC);
+    TCA0.SINGLE.INTFLAGS = 1; /* clear interrupt flag */
 }
 
 

@@ -1,16 +1,10 @@
-<<<<<<< HEAD
 # git ls-files --others --exclude-from=.git/info/exclude
 # Lines that start with '#' are comments.
 # For a project mostly in C, the following would be a good set of
 # exclude patterns (uncomment them if you want to use them):
 *.[oa]
-*.pyc
 main.hex
 main.elf
-.DS_Store
-=======
-*.o
-*.a
 *.pyc
 *.hex
 *.elf
@@ -20,4 +14,3 @@ main_nat.c
 main_img.c
 pmstdlib_img.c
 pmstdlib_nat.c
->>>>>>> avr-da

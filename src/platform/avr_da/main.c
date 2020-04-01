@@ -30,7 +30,7 @@ int main(void)
         retval = pm_init(heap, HEAP_SIZE);
         PM_RETURN_IF_ERROR(retval);
         retval = pm_run((uint8_t *)"main");
-        puts("\nRestarting...");
+        puts("\nRestarting...\x4");
     }
     return (int)retval;
 }

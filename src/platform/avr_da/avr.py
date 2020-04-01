@@ -18,19 +18,34 @@
 #
 # \code
 # from avr import *
-# LED.set(LED.ON)
-# LED.set(LED.OFF)
-# LED.toggle()
-# LED.get() -> True/False
 #
-# BTN.pressed() -> True/False
+# Pin() examples:
+#   pin enumeration PORTA..F -> 0, 8, 16, 24 .. 47
+# 
+#   pin12 = Pin(12, INPUT + PULL_UP) # pin 12 (aka B4) as input with pull up enabled
+#   print pin12.get()
 #
-# avr.delay(500) # Half second pause
+#   pin13 = Pin(13, OUTPUT + START_HIGH + INVERT) # configure pin 13 (aka B5) as output
+#   pin13.toggle()
 #
-# pin enumeration PORTA..F -> 0, 8, 16, 24 .. 47
-# pin(pin_no, value) -> set pin = value
-# pin(pin_no) -> True / False 
+#  Led() examples: (LED is the default LED on the curiosity board)
+#   LED.set(LED.ON)
+#   LED.set(LED.OFF)
+#   LED.toggle()
+#   LED.get() -> True/False
+#   LED2 = Pin(8, Pin.OUTPUT + Pin.START_HIGH + Pin.INVERT)  # associate an LED with pin 8 (aka B0)
 #
+# Button() example: (BTN is the default button on the curiosity board)
+#   print BTN.pressed() # -> True/False
+#   BTN2 = Button(16) # associate a new button with pin 16 (aka C0)
+#
+# Blocking delays:
+#   delay(500) # Half second pause
+#
+# SPI example # sck, mosi, miso must match the selected instance default pins
+#   oled = SPI(0, mode=0, sck=40, mosi=41, miso=42, frequency=4000000)
+#   oled.transfer(bytearray(1,2,3,4))
+# 
 # \endcode
 
 """__NATIVE__
@@ -42,6 +57,8 @@
 class Pin() :
     HIGH = 1
     LOW  = 0
+    ON   = 1
+    OFF  = 0
     # configuration
     INPUT      = 0
     OUTPUT     = 1<<0
@@ -50,12 +67,15 @@ class Pin() :
     PULL_UP    = 1<<3
     IOC        = 1<<4
 
-    def __init__(self, pin_no, config=Pin.INPUT):
+    def __init__(self, pin_no, config):
         self.pin_no = pin_no
-        if config & Pin.START_HIGH:
+        if config & Pin.START_HIGH :
             _pin(pin_no, Pin.HIGH)
-        _pin_config(pin_no, config)
-    
+        self.ctrl(config)
+
+    def ctrl(self, config):
+        _pin_config(self.pin_no, config)
+
     def set(self, value):
         _pin(self.pin_no, value)
 
@@ -65,28 +85,57 @@ class Pin() :
     def get(self):
         return _pin(self.pin_no)
 
+# Default LED present on Curiosity board
+# LED = Pin(45, 7) #Pin.OUTPUT + Pin.INVERT + Pin.START_HIGH)
+
+
+
+
+def delay(ms):
+    """__NATIVE__
+    PmReturn_t retval = PM_RET_OK;
+
+    if(NATIVE_GET_NUM_ARGS() != 1) {
+        PM_RAISE(retval, PM_RET_EX_TYPE);
+        return retval;
+    }
+
+    pPmObj_t pa = NATIVE_GET_LOCAL(0);
+    if (OBJ_GET_TYPE(pa) == OBJ_TYPE_INT) {
+        _delay_ms((double) ((pPmInt_t)pa)->val);
+    }
+    else if (OBJ_GET_TYPE(pa) == OBJ_TYPE_FLT) {
+        _delay_ms((double) ((pPmFloat_t)pa)->val);
+    }
+    else {
+        PM_RAISE(retval, PM_RET_EX_TYPE);
+    }
+
+    NATIVE_SET_TOS(PM_NONE);
+    return retval;
+    """
+    pass
+
 # define AVR-DA Curiosity specific LED pin and value
-class Led(Pin) :
-    ON  = 0
-    OFF = 1 
-
-    def __init__(self, pin_no):
-        super().__init__(pin_no, config=Pin.OUTPUT)
             
- # Default LED present on Curiosity board
-LED = Led(45)
-
 class Button() :
     "Handle simple Push buttons"
 
     def __init__(self, pin_no):
         self.pin_no = pin_no
+        _pin(pin_no, Pin.INPUT)
+        self.prev = False
 
     def pressed(self):
+        prev = self.prev
+        self.prev = self.state()    # new state
+        return  True if not prev and self.prev else False         
+
+    def state(self):
         return not _pin(self.pin_no)
 
 # Default button present on Curiosity board
-BTN = Button(46)
+# BTN = Button(46)
 
 # 
 # Low level routines to access AVR-DA and Curiosity assets
@@ -135,7 +184,7 @@ def _pin(pin, value):
             return retval;
         }
 
-        *(port+1) = 1<<pin; // Set pin DIRSET to output
+        // *(port+1) = 1<<pin; // Set pin DIRSET to output
         
         if ( ((pPmInt_t)pa)->val )
             *(port+5) = 1<<pin;     // OUT set
@@ -150,7 +199,7 @@ def _pin(pin, value):
     """
     pass
 
-def _pin_config(pin, config):
+def _pin_config(pin_no, config):
     """__NATIVE__
     uint8_t *port;
     uint8_t pin, config, ctrl;
@@ -193,7 +242,6 @@ def _pin_config(pin, config):
     else 
         *(port+2) = 1<<pin; // Set  DIRCLR to input
     
-
 /*  
     INVERT     = 1<<2
     PULL_UP    = 1<<3 
@@ -212,50 +260,24 @@ def _pin_config(pin, config):
     return retval;
     """
     pass
-
-def delay(ms):
-    """__NATIVE__
-    PmReturn_t retval = PM_RET_OK;
-
-    if(NATIVE_GET_NUM_ARGS() != 1) {
-        PM_RAISE(retval, PM_RET_EX_TYPE);
-        return retval;
-    }
-
-    pPmObj_t pa = NATIVE_GET_LOCAL(0);
-    if (OBJ_GET_TYPE(pa) == OBJ_TYPE_INT) {
-        _delay_ms((double) ((pPmInt_t)pa)->val);
-    }
-    else if (OBJ_GET_TYPE(pa) == OBJ_TYPE_FLT) {
-        _delay_ms((double) ((pPmFloat_t)pa)->val);
-    }
-    else {
-        PM_RAISE(retval, PM_RET_EX_TYPE);
-    }
-
-    NATIVE_SET_TOS(PM_NONE);
-    return retval;
-    """
-    pass
-
 # 
 # SPI
 #
-class SPI():
+class Spi():
     "Synchronous Port Interface"
     def __init__(self, instance, sck, mosi, miso, mode=0, frequency=1000000):
         self.instance = instance
-        _pin_config(sck, config=Pin.OUTPUT)
-        _pin_config(mosi, config=Pin.OUTPUT)
-        _pin_config(miso, config=Pin.INPUT)
+        # _pin_config(sck, config=Pin.OUTPUT)
+        # _pin_config(mosi, config=Pin.OUTPUT)
+        # _pin_config(miso, config=Pin.INPUT)
         _spi_config(instance, mode, frequency)
 
-    def transfer(data):
+    def transfer(self, data):
         return _spi_transfer(self.instance, data)
 
 
 # example 
-#oled = SPI(0, mode=0, sck=40, mosi=41, miso=42, frequency=4000000)
+#oled = Spi(0, mode=0, sck=40, mosi=41, miso=42, frequency=4000000)
 #oled.transfer(bytearray(1,2,3,4))
 
 def _spi_config(instance, mode, frequency):
@@ -271,32 +293,35 @@ def _spi_config(instance, mode, frequency):
 
     pPmObj_t pa = NATIVE_GET_LOCAL(0);
     if (OBJ_GET_TYPE(pa) == OBJ_TYPE_INT) {
-        instance =  ((pPmInt_t)pa)->val);
+        instance =  ((pPmInt_t)pa)->val;
     }
     else {
         PM_RAISE(retval, PM_RET_EX_TYPE);
+        return retval;
     }
 
     pa = NATIVE_GET_LOCAL(1);
     if (OBJ_GET_TYPE(pa) == OBJ_TYPE_INT) {
-        mode =  ((pPmInt_t)pa)->val);
+        mode =  ((pPmInt_t)pa)->val;
     }
     else {
         PM_RAISE(retval, PM_RET_EX_TYPE);
+        return retval;
     }
 
     pa = NATIVE_GET_LOCAL(2);
     if (OBJ_GET_TYPE(pa) == OBJ_TYPE_INT) {
-        frequency =  ((pPmInt_t)pa)->val);
+        frequency =  ((pPmInt_t)pa)->val;
     }
     else {
         PM_RAISE(retval, PM_RET_EX_TYPE);
+        return retval;
     }
     /* get pointer to SPI instance registers */
-    uint8_t *spi = (uint8_t *)(SPI0+instance);
+    uint8_t *spi = (uint8_t *)(&SPI0+instance);
 
     /* find best prescaler so that spi_clock < frequency */
-    uint32_t spi_clock = FCU/4;
+    uint32_t spi_clock = F_CPU/4;
     uint8_t  prescaler = 0;
     while (spi_clock > frequency) {
         spi_clock /= 4;
@@ -304,7 +329,7 @@ def _spi_config(instance, mode, frequency):
     }
     if (prescaler >= 3) { 
         prescaler = 3;  // 1:128  is really the best/slowest we can do
-        spi_clock = FCU/128;
+        spi_clock = F_CPU/128;
     }
     if (spi_clock*2 <= frequency) {
         prescaler += 8; // CLK*2 feature allows us to find middle points
@@ -322,9 +347,6 @@ def _spi_transfer(instance, data):
     """__NATIVE__
     PmReturn_t retval = PM_RET_OK;
     uint8_t instance;
-    uint8_t objid;
-    pPmBytearray_t pba = C_NULL;
-    pPmBytes_t pb = C_NULL;
 
     if(NATIVE_GET_NUM_ARGS() != 2) {
         PM_RAISE(retval, PM_RET_EX_TYPE);
@@ -333,45 +355,32 @@ def _spi_transfer(instance, data):
 
     pPmObj_t pi = NATIVE_GET_LOCAL(0);
     if (OBJ_GET_TYPE(pi) == OBJ_TYPE_INT) {
-        instance =  ((pPmInt_t)pi)->val);
+        instance =  ((pPmInt_t)pi)->val;
     }
     else {
         PM_RAISE(retval, PM_RET_EX_TYPE);
+        return retval;
     }
     /* get pointer to SPI instance registers */
-    uint8_t *spi = (uint8_t *)(SPI0+instance);
+    uint8_t *spi = (uint8_t *)(&SPI0+instance);
 
     pPmObj_t po = NATIVE_GET_LOCAL(1);
     if (OBJ_GET_TYPE(po) != OBJ_TYPE_BYA) {
         PM_RAISE(retval, PM_RET_EX_TYPE);
+        return retval;
     }
 
-    uint8_t n = ((pPmByteArray_t)pb)->length;
-
-    /* Allocate a result bytearray */
-    retval = heap_getChunk(sizeof(PmBytearray_t), (uint8_t **)&pba);
-    PM_RETURN_IF_ERROR(retval);
-    OBJ_SET_TYPE(pba, OBJ_TYPE_BYA);
-    pba->length = n;
-    pba->val = C_NULL;
-
-    /* Allocate the bytes container */
-    heap_gcPushTempRoot((pPmObj_t)pba, &objid);
-    retval = bytes_new(n, (pPmObj_t *)&pb);
-    heap_gcPopTempRoot(objid);
-    PM_RETURN_IF_ERROR(retval);
-    pba->val = pb;
+    uint8_t n = ((pPmBytearray_t)po)->length;
+    uint8_t *pb = ((pPmBytearray_t)po)->val->val;
 
     // perform the transfer
     for(int i=0; i<n; i++) {
-        bytearray_getItem(po, i, &pi);
-        *(spi+4) = (pPmInt(pi))->val; // write data
-        while( *(spi+3) & 0x80 == 0); // wait 
-        (pPmInt(pi))->val = *(spi+4); // read back 
-        bytearray_setItem(pa, i, pi);
+        *(spi+4) = *pb; // write data
+        while( (*(spi+3) & 0x80) == 0); // wait 
+        *pb++ = *(spi+4); // read back 
     }
 
-    NATIVE_SET_TOS(pa);
+    NATIVE_SET_TOS(po);
     return retval;
     """
     pass

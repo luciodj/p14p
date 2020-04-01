@@ -19,7 +19,6 @@
 #include "avr/pgmspace.h"
 
 #define HEAP_SIZE 15000
-  
 
 extern unsigned char  usrlib_img[];
 
@@ -34,7 +33,7 @@ int main(void)
         retval = pm_init(heap, HEAP_SIZE, MEMSPACE_PROG, usrlib_img);
         PM_RETURN_IF_ERROR(retval);
         retval = pm_run((uint8_t *)"main");
-        puts("\nRestarting...");
+        puts("\nRestarting...\x4");
     }
     return (int)retval;
 }

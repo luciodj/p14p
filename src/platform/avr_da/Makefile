@@ -20,7 +20,7 @@ MCU = avr128da48
 FORMAT = ihex
 TARGET = main
 F_CPU = 24000000UL
-SRC = $(TARGET).c plat.c $(TARGET)_nat.c $(TARGET)_img.c
+SRC = $(TARGET).c plat.c  $(TARGET)_nat.c $(TARGET)_img.c # pyToC.c
 ASRC =
 OPT = s
 

@@ -15,4 +15,5 @@ from avr import *
 LED = Pin(45, 7)
 BTN = Button(46)
 ipm.ipm({"LED":LED, "BTN":BTN, "Pin":Pin, "Spi":Spi, "delay":delay})
-ipm.ipm()
+# b=bytearray(1)
+# ipm.ipm()

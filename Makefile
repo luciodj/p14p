@@ -80,4 +80,3 @@ html-clean :
 
 program :
 	$(MAKE) -C src/platform/$(PLATFORM) program
-

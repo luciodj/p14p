@@ -22,6 +22,7 @@ FORMAT = ihex
 TARGET = main
 SRC = $(TARGET).c plat.c pm_generated_objs.c pm_generated_types.h
 F_CPU = 24000000UL
+SRC = $(TARGET).c plat.c  $(TARGET)_nat.c $(TARGET)_img.c # pyToC.c
 ASRC =
 OPT = s
 

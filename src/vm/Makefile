@@ -12,7 +12,7 @@
 #
 
 
-PLATFORM ?= desktop
+PLATFORM = avr_da
 PMIMGCREATOR := ../tools/pmCoCreator.py
 PMSTDLIB_SOURCES = ../lib/list.py \
                    ../lib/dict.py \

@@ -12,8 +12,8 @@ PM_LIB_PATH = ../../vm/$(PM_LIB_FN)
 PM_USR_SOURCES = main.py avr.py
 PMIMGCREATOR := ../../tools/pmImgCreator.py
 PMGENPMFEATURES := ../../tools/pmGenPmFeatures.py
-IPM=true
-
+IPM = true
+DEBUG = true
 
 # Platform Configuration
 MCU = avr128da48

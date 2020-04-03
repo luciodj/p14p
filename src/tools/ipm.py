@@ -344,7 +344,7 @@ def parse_cmdline():
                       help="connect to VM running on the desktop via OS pipes")
     parser.add_option("-s", "--serial",
                       dest="serdev",
-                      default="serdev",
+                    #   default="serdev",
                       help="connect to VM over a serial device")
     parser.add_option("-b", "--baud",
                       dest="baud",

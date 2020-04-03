@@ -12,9 +12,8 @@ PM_LIB_PATH = ../../vm/$(PM_LIB_FN)
 PM_USR_SOURCES = main.py avr.py
 PMIMGCREATOR := ../../tools/pmCoCreator.py
 PMGENPMFEATURES := ../../tools/pmGenPmFeatures.py
-IPM=true
-
-DEV_PACK = "/Applications/microchip/mplabx/v5.35/packs/Microchip/AVR-Dx_DFP/1.0.18"
+IPM = true
+DEBUG = true
 
 # Platform Configuration
 MCU = avr128da48

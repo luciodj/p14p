@@ -264,20 +264,21 @@ def _pin_config(pin_no, config):
 #
 class Spi(object):
     "Synchronous Port Interface"
-    def __init__(self, instance,  mosi=4, miso=5, msck=6, mode=0, frequency=4000000):
+    def __init__(self, instance, mode=0, frequency=8000000,  mosi=4, miso=5, msck=6):
         self.instance = instance
-        _spi_config(instance, mosi, miso, msck, mode, frequency)
-        pass
+        _spi_config(instance, mode, frequency, mosi, miso, msck)
 
     def xfer(self, data):
         return _spi_xfer(self.instance, data)
 
 # example 
-#oled = Spi(mode=0, frequency=4000000)
+#oled = Spi(0) 
+#oled = Spi(0, 0, 3000000) 
 #oled.xfer(bytearray([1,2,3,4]))
 
-def _spi_config(instance, mosi, miso, msck, mode, frequency):
+def _spi_config(instance, mode, frequency, mosi, miso, msck):
     """__NATIVE__
+    // computes best prescaler approx -> returns actual frequency 
     PmReturn_t retval = PM_RET_OK;
 
     if(NATIVE_GET_NUM_ARGS() != 6) {
@@ -297,36 +298,35 @@ def _spi_config(instance, mosi, miso, msck, mode, frequency):
         PM_RAISE(retval, PM_RET_EX_TYPE);
         return retval;
     }
+    uint8_t mode =  ((pPmInt_t)pa)->val;
+
+    pPmObj_t pf = NATIVE_GET_LOCAL(2);
+    if (OBJ_GET_TYPE(pf) != OBJ_TYPE_INT) {
+        PM_RAISE(retval, PM_RET_EX_TYPE);
+        return retval;
+    }
+    uint32_t frequency =  ((pPmInt_t)pf)->val;
+    
+    pa = NATIVE_GET_LOCAL(3);
+    if (OBJ_GET_TYPE(pa) != OBJ_TYPE_INT) {
+        PM_RAISE(retval, PM_RET_EX_TYPE);
+        return retval;
+    }
     uint8_t mosi =  ((pPmInt_t)pa)->val;
 
-    pa = NATIVE_GET_LOCAL(2);
+    pa = NATIVE_GET_LOCAL(4);
     if (OBJ_GET_TYPE(pa) != OBJ_TYPE_INT) {
         PM_RAISE(retval, PM_RET_EX_TYPE);
         return retval;
     }
     uint8_t miso =  ((pPmInt_t)pa)->val;
 
-    pa = NATIVE_GET_LOCAL(3);
-    if (OBJ_GET_TYPE(pa) != OBJ_TYPE_INT) {
-        PM_RAISE(retval, PM_RET_EX_TYPE);
-        return retval;
-    }
-    uint8_t msck =  ((pPmInt_t)pa)->val;
-    
-    pa = NATIVE_GET_LOCAL(4);
-    if (OBJ_GET_TYPE(pa) != OBJ_TYPE_INT) {
-        PM_RAISE(retval, PM_RET_EX_TYPE);
-        return retval;
-    }
-    uint8_t mode =  ((pPmInt_t)pa)->val;
-
     pa = NATIVE_GET_LOCAL(5);
     if (OBJ_GET_TYPE(pa) != OBJ_TYPE_INT) {
         PM_RAISE(retval, PM_RET_EX_TYPE);
         return retval;
     }
-    uint32_t frequency =  ((pPmInt_t)pa)->val;
-    printf("Frequency = %ld \\n", frequency);
+    uint8_t msck =  ((pPmInt_t)pa)->val;
     
     /* get pointer to SPI instance registers */
     uint8_t *spi = (uint8_t *)(&SPI0+instance);
@@ -354,8 +354,9 @@ def _spi_config(instance, mosi, miso, msck, mode, frequency):
     }
     if (spi_clock*2 <= frequency) {
         prescaler += 8; // CLK*2 feature allows us to find middle points
+        spi_clock *= 2;
     }
-    printf("SpiClock = %ld \\n", spi_clock);
+    ((pPmInt_t)pf)->val = spi_clock;
 
     // SPI.CTRLA
     *spi = (0<<6) + (1<<5) + (prescaler<<1); // MSB, master, CLK*2|PRE, ENABLE
@@ -364,7 +365,7 @@ def _spi_config(instance, mosi, miso, msck, mode, frequency):
     // enable spi port
     *spi |= 1;  
  
-    NATIVE_SET_TOS(PM_NONE);
+    NATIVE_SET_TOS(pf);
     return retval;
     """
     pass

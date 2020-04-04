@@ -102,9 +102,9 @@ void avr_spi_xfer(uint8_t instance, uint8_t size, uint8_t *pb)
 }
 
 /**
- * \brief Initialize ADC interface
+ * \brief configure ADC interface
  */
-void ADC_Initialize(void)
+void avr_adc_config(void)
 {
     //SAMPNUM NONE; 
 	ADC0.CTRLB = 0x00;
@@ -132,9 +132,11 @@ void ADC_Initialize(void)
 	ADC0.WINLT = 0x00;
     //RUNSTBY disabled; CONVMODE disabled; LEFTADJ disabled; RESSEL 12BIT; FREERUN disabled; ENABLE enabled; 
 	ADC0.CTRLA = 0x01;
+    // activate ADC0 VRef and select the 2.048V option
+    VREF.ADC0REF = 0x81;
 }
 
-uint16_t ADC_GetConversion(uint8_t channel)
+uint16_t avr_adc_get(uint8_t channel)
 {
 	uint16_t res;
 

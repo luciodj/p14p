@@ -208,12 +208,12 @@ def _pin_config(pin_no, config):
 #
 class Spi(object):
     "Synchronous Port Interface"
-    def __init__(self, instance, mode=0, frequency=8000000,  mosi=4, miso=5, msck=6):
-        self.instance = instance
-        _spi_config(instance, mode, frequency, mosi, miso, msck)
+    def __init__(self, instance, mode=0, freq=8000000,  mosi=4, miso=5, msck=6):
+        self.id = instance
+        self.freq = _spi_config(instance, mode, freq, mosi, miso, msck)
 
     def xfer(self, data):
-        return _spi_xfer(self.instance, data)
+        return _spi_xfer(self.id, data)
 
 # example 
 #oled = Spi(0) 
@@ -254,9 +254,9 @@ def _spi_config(instance, mode, frequency, mosi, miso, msck):
     PM_CHECK_FUNCTION( getRangedUint8(pa, 0, 48, &msck));
     avr_pin_config(msck, 1); // output
     
-    ((pPmInt_t)pf)->val = avr_spi_config(instance, mode, frequency);
+    retval = int_new( avr_spi_config(instance, mode, frequency), &pa);
 
-    NATIVE_SET_TOS(pf);
+    NATIVE_SET_TOS(pa);
     return retval;
     """
     pass
@@ -294,6 +294,56 @@ def _spi_xfer(instance, data):
     avr_spi_xfer(instance, n, pb);
 
     NATIVE_SET_TOS(po);
+    return retval;
+    '''
+    pass
+
+#
+#   ADC support
+#
+class Adc(object):
+    TEMP = 0x42
+    DAC  = 0x48
+    GND  = 0x40
+    
+    def __init__(self):
+        _adc_config()
+
+    def get(self, channel):
+        return _adc_get(channel)
+
+
+def _adc_config(void):
+    """__NATIVE__
+    PmReturn_t retval = PM_RET_OK;
+
+    CHECK_NUM_ARGS(0);
+
+    //uint8_t mode;
+    //pPmObj pa = NATIVE_GET_LOCAL(1);
+    //PM_CHECK_FUNCTION( getRangedUint8(pa, 0, 3, &mode));
+    
+    avr_adc_config();
+
+    NATIVE_SET_TOS(PM_NONE);
+    return retval;
+    """
+    pass
+
+def _adc_get(channel):
+    '''__NATIVE__
+    PmReturn_t retval = PM_RET_OK;
+    pPmObj_t pVal;
+
+    CHECK_NUM_ARGS(1);
+
+    uint8_t channel;
+    pPmObj_t pc = NATIVE_GET_LOCAL(0);
+    PM_CHECK_FUNCTION( getRangedUint8(pc, 0, 0x48, &channel));
+
+    retval = int_new(avr_adc_get(channel), &pVal);
+
+    NATIVE_SET_TOS(pVal);
     return retval;
     '''
     pass

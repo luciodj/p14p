@@ -50,9 +50,27 @@ getUint32(pPmObj_t ppo, uint32_t* pu32_val)
 
     // Raise a ValueError if address is < min or > max
     EXCEPTION_UNLESS(i32_val >= 0, PM_RET_EX_VAL, 
-        "Object value must be non-negative");
+        "Object value must be non-negative ");
     *pu32_val = i32_val;
 
+    return retval;
+}
+
+PmReturn_t
+getRangedUint8(pPmObj_t ppo,
+  uint8_t u8_min, uint8_t u8_max, uint8_t* pu8_val)
+{
+    PmReturn_t retval = PM_RET_OK;
+    int32_t i32_temp;
+
+    // Get the int32 from the Python arguments passed to this function
+    PM_CHECK_FUNCTION( getInt32(ppo, &i32_temp) );
+
+    // Raise a ValueError if address is < min or > max
+    EXCEPTION_UNLESS((i32_temp >= u8_min) && (i32_temp <= u8_max), 
+        PM_RET_EX_VAL, 
+        "Object value must be between %d and %d.  ", u8_min, u8_max);
+    *pu8_val = i32_temp;
     return retval;
 }
 
@@ -97,7 +115,7 @@ getInt16(pPmObj_t ppo, int16_t* pi16_val)
 }
 
 PmReturn_t
-getBool(pPmObj_t ppo, bool_t* pb_bool)
+getBool(pPmObj_t ppo, bool* pb_bool)
 {
     PmReturn_t retval = PM_RET_OK;
 

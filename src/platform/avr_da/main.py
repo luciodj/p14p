@@ -12,8 +12,18 @@
 
 import ipm
 from avr import *
+from sys import *
 LED = Pin(45, 7)
 BTN = Button(46)
-ipm.ipm({"LED":LED, "BTN":BTN, "Pin":Pin, "Spi":Spi, "delay":delay})
+
+def bench(fn, times=1000):
+    t=time()
+    i=0
+    while i < times:
+        fn()
+        i += 1
+    return time()-t - 250*times/1000 # remove the empty function call cost
+
+ipm.ipm({"bench":bench, "LED":LED, "BTN":BTN, "Pin":Pin, "Spi":Spi, "delay":delay})
 # b=bytearray(1)
 # ipm.ipm()

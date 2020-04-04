@@ -52,7 +52,8 @@
 #include <avr/io.h>
 #define __DELAY_BACKWARD_COMPATIBLE__
 #include <util/delay.h>
-//#include "pyToC.h"
+#include "pyToC.h"
+#include "avr.h"
 """
 
 class Pin(object) :
@@ -143,10 +144,9 @@ class Button(object) :
 #
 # Value is either boolean True/False or Integer 0 or non-zero.
 #
-def _pin(pin, value):
+def _pin(pin_no, value):
     """__NATIVE__
-    uint8_t *port;
-    uint8_t pin;
+    uint8_t pin_no;
     pPmObj_t pa;
     PmReturn_t retval = PM_RET_OK;
 
@@ -157,21 +157,7 @@ def _pin(pin, value):
 
     /* get the pin number */
     pa = NATIVE_GET_LOCAL(0);
-    if (OBJ_GET_TYPE(pa) != OBJ_TYPE_INT) {
-        PM_RAISE(retval, PM_RET_EX_TYPE);
-        return retval;
-    }
-
-    /* Check pin is in range 0-47 (A-F) */
-    if ( ((pPmInt_t)pa)->val < 0 || ((pPmInt_t)pa)->val > 48 ) {
-        PM_RAISE(retval, PM_RET_EX_VAL);
-        return retval;
-    }
-    pin = ((pPmInt_t)pa)->val;
-
-    /* split in port and pin */
-    port = (uint8_t*) (&PORTA + (pin >> 3)); 
-    pin &= 0x7;
+    PM_CHECK_FUNCTION( getRangedUint8(pa, 0, 48, &pin_no));
 
     /* if assigned a value */
     if (NATIVE_GET_NUM_ARGS() == 2) {
@@ -182,51 +168,26 @@ def _pin(pin, value):
             PM_RAISE(retval, PM_RET_EX_TYPE);
             return retval;
         }
-
-        // *(port+1) = 1<<pin; // Set pin DIRSET to output
-        
-        if ( ((pPmInt_t)pa)->val )
-            *(port+5) = 1<<pin;     // OUT set
-        else
-            *(port+6) = 1<<pin;     // OUT clear
+        avr_pin_set(pin_no, ((pPmInt_t)pa)->val);
     }
+    pa = (avr_pin_get(pin_no)) ? PM_TRUE : PM_FALSE;
 
-    pa = ( *(port+8) & (1<<pin)) ? PM_TRUE : PM_FALSE;
     NATIVE_SET_TOS(pa); // Push our result object onto the stack
-
     return retval;
     """
     pass
 
 def _pin_config(pin_no, config):
     """__NATIVE__
-    uint8_t *port;
-    uint8_t pin, config, ctrl;
+    uint8_t pin_no;
     pPmObj_t pa;
     PmReturn_t retval = PM_RET_OK;
 
-    if ( NATIVE_GET_NUM_ARGS() != 2 ) {
-        PM_RAISE(retval, PM_RET_EX_TYPE);
-        return retval;
-    }
+    CHECK_NUM_ARGS(2);
 
     /* get the pin number */
     pa = NATIVE_GET_LOCAL(0);
-    if (OBJ_GET_TYPE(pa) != OBJ_TYPE_INT) {
-        PM_RAISE(retval, PM_RET_EX_TYPE);
-        return retval;
-    }
-
-    /* Check pin is in range 0-47 (A-F) */
-    if ( ((pPmInt_t)pa)->val < 0 || ((pPmInt_t)pa)->val > 48 ) {
-        PM_RAISE(retval, PM_RET_EX_VAL);
-        return retval;
-    }
-    pin = ((pPmInt_t)pa)->val;
-
-    /* split in port and pin */
-    port = (uint8_t*) (&PORTA + (pin >> 3)); 
-    pin &= 0x7;
+    PM_CHECK_FUNCTION( getRangedUint8(pa, 0, 48, &pin_no));
 
     // get the config value 
     pa = NATIVE_GET_LOCAL(1); 
@@ -235,25 +196,8 @@ def _pin_config(pin_no, config):
         PM_RAISE(retval, PM_RET_EX_TYPE);
         return retval;
     }
-    config = ((pPmInt_t)pa)->val;
-    if ( config & 1 ) 
-        *(port+1) = 1<<pin; // Set  DIRSET to output
-    else 
-        *(port+2) = 1<<pin; // Set  DIRCLR to input
-    
-/*  
-    INVERT     = 1<<2
-    PULL_UP    = 1<<3 
-    IOC        = 1<<4 
-*/
-    ctrl = 0;
-    if ( config & 1<<2)         // INVERT
-        ctrl += 1<<7;     
-    if ( config & 1<<3)         // PULLUP
-        ctrl += 1<<3;     
-    if ( config & 1<<4)         // IOC 
-        ctrl += 3;              // falling edge
-    *(port+16+pin) = ctrl;
+
+    avr_pin_config(pin_no, ((pPmInt_t)pa)->val);
 
     NATIVE_SET_TOS(PM_NONE);
     return retval;
@@ -281,90 +225,37 @@ def _spi_config(instance, mode, frequency, mosi, miso, msck):
     // computes best prescaler approx -> returns actual frequency 
     PmReturn_t retval = PM_RET_OK;
 
-    if(NATIVE_GET_NUM_ARGS() != 6) {
-        PM_RAISE(retval, PM_RET_EX_TYPE);
-        return retval;
-    }
+    CHECK_NUM_ARGS(6);
 
+    uint8_t instance;
     pPmObj_t pa = NATIVE_GET_LOCAL(0);
-    if (OBJ_GET_TYPE(pa) != OBJ_TYPE_INT) {
-        PM_RAISE(retval, PM_RET_EX_TYPE);
-        return retval;
-    }
-    uint8_t instance =  ((pPmInt_t)pa)->val & 1;
+    PM_CHECK_FUNCTION( getRangedUint8(pa, 0, 1, &instance));
 
+    uint8_t mode;
     pa = NATIVE_GET_LOCAL(1);
-    if (OBJ_GET_TYPE(pa) != OBJ_TYPE_INT) {
-        PM_RAISE(retval, PM_RET_EX_TYPE);
-        return retval;
-    }
-    uint8_t mode =  ((pPmInt_t)pa)->val;
+    PM_CHECK_FUNCTION( getRangedUint8(pa, 0, 3, &mode));
 
     pPmObj_t pf = NATIVE_GET_LOCAL(2);
-    if (OBJ_GET_TYPE(pf) != OBJ_TYPE_INT) {
-        PM_RAISE(retval, PM_RET_EX_TYPE);
-        return retval;
-    }
     uint32_t frequency =  ((pPmInt_t)pf)->val;
+    PM_CHECK_FUNCTION( getRangedInt(pf, 0, F_CPU, (int32_t*)&frequency));
     
+    uint8_t mosi;
     pa = NATIVE_GET_LOCAL(3);
-    if (OBJ_GET_TYPE(pa) != OBJ_TYPE_INT) {
-        PM_RAISE(retval, PM_RET_EX_TYPE);
-        return retval;
-    }
-    uint8_t mosi =  ((pPmInt_t)pa)->val;
+    PM_CHECK_FUNCTION( getRangedUint8(pa, 0, 48, &mosi));
+    avr_pin_config(mosi, 1); // output
 
+    uint8_t miso;
     pa = NATIVE_GET_LOCAL(4);
-    if (OBJ_GET_TYPE(pa) != OBJ_TYPE_INT) {
-        PM_RAISE(retval, PM_RET_EX_TYPE);
-        return retval;
-    }
-    uint8_t miso =  ((pPmInt_t)pa)->val;
+    PM_CHECK_FUNCTION( getRangedUint8(pa, 0, 48, &miso));
+    avr_pin_config(miso, 0); // input
 
+    uint8_t msck;
     pa = NATIVE_GET_LOCAL(5);
-    if (OBJ_GET_TYPE(pa) != OBJ_TYPE_INT) {
-        PM_RAISE(retval, PM_RET_EX_TYPE);
-        return retval;
-    }
-    uint8_t msck =  ((pPmInt_t)pa)->val;
+    PM_CHECK_FUNCTION( getRangedUint8(pa, 0, 48, &msck));
+    avr_pin_config(msck, 1); // output
     
-    /* get pointer to SPI instance registers */
-    uint8_t *spi = (uint8_t *)(&SPI0+instance);
+    ((pPmInt_t)pf)->val = avr_spi_config(instance, mode, frequency);
 
-    /* get a pointer to the port struct */
-    uint8_t *port = (uint8_t*) (&PORTA + (mosi>>3)); // use mosi to deduce the port
-    // SPI0 has default: MOSI = 04/PA4(out), MISO = 05/PA5(in), MSCK = 06/PA6(out) 
-    mosi &= 7;
-    miso &= 7;
-    msck &= 7;
-
-    *(port+1) = (1<<mosi) + (1<<msck); // Set  DIRSET to output for MOSI and MSCK
-    *(port+2) = (1<<miso); // Set  DIRCLR to input for MISO
-    
-    /* find best prescaler so that spi_clock < frequency */
-    uint32_t spi_clock = F_CPU/4;
-    uint8_t  prescaler = 0;
-    while (spi_clock > frequency) {
-        spi_clock /= 4;
-        prescaler++;
-    }
-    if (prescaler >= 3) { 
-        prescaler = 3;  // 1:128  is really the best/slowest we can do
-        spi_clock = F_CPU/128;
-    }
-    if (spi_clock*2 <= frequency) {
-        prescaler += 8; // CLK*2 feature allows us to find middle points
-        spi_clock *= 2;
-    }
-    ((pPmInt_t)pf)->val = spi_clock;
-
-    // SPI.CTRLA
-    *spi = (0<<6) + (1<<5) + (prescaler<<1); // MSB, master, CLK*2|PRE, ENABLE
-    // SPI.CTRLB
-    *(spi+1) = (mode & 0x03) + 4; // disable slave select in master mode (single master)
-    // enable spi port
-    *spi |= 1;  
- 
     NATIVE_SET_TOS(pf);
     return retval;
     """
@@ -373,23 +264,13 @@ def _spi_config(instance, mode, frequency, mosi, miso, msck):
 def _spi_xfer(instance, data):
     '''__NATIVE__
     PmReturn_t retval = PM_RET_OK;
-    uint8_t instance;
     pPmObj_t pba;
 
-    if(NATIVE_GET_NUM_ARGS() != 2) {
-        PM_RAISE(retval, PM_RET_EX_TYPE);
-        return retval;
-    }
+    CHECK_NUM_ARGS(2);
 
+    uint8_t instance;
     pPmObj_t pi = NATIVE_GET_LOCAL(0);
-    if (OBJ_GET_TYPE(pi) != OBJ_TYPE_INT) {
-        PM_RAISE(retval, PM_RET_EX_TYPE);
-        return retval;
-    }
-    instance =  ((pPmInt_t)pi)->val;
-
-    /* get pointer to SPI instance registers */
-    volatile uint8_t *spi = (uint8_t *)(&SPI0+instance);
+    PM_CHECK_FUNCTION( getRangedUint8(pi, 0, 1, &instance));
 
     pPmObj_t po = NATIVE_GET_LOCAL(1);
     if (OBJ_GET_TYPE(po) != OBJ_TYPE_CLI) { // must be a class instance 
@@ -410,12 +291,7 @@ def _spi_xfer(instance, data):
     uint8_t n = ((pPmBytearray_t)pba)->length;
     uint8_t *pb = ((pPmBytearray_t)pba)->val->val;
 
-    // perform the transfer
-    for(int i=0; i<n; i++) {
-        *(spi+4) = *pb; // write data
-        while( (*(spi+3) & 0x80) == 0); // wait 
-        *pb++ = *(spi+4); // read back 
-    }
+    avr_spi_xfer(instance, n, pb);
 
     NATIVE_SET_TOS(po);
     return retval;

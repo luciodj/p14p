@@ -19,8 +19,8 @@ ifeq ($(DEBUG),true)
 else
     CDEBUGS += -Os
 endif
-CFLAGS = -Wall -fno-strict-aliasing -Wstrict-prototypes \
-         -Wdeclaration-after-statement -Werror $(CDEBUGS) $(CINCS)
+CFLAGS = -fno-strict-aliasing -Wstrict-prototypes \
+         -Wdeclaration-after-statement $(CDEBUGS) $(CINCS)
 
 export CFLAGS IPM PM_LIB_FN
 

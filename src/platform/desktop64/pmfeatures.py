@@ -24,7 +24,7 @@ PM_FEATURES = {
     "HAVE_BACKTICK": True,
     "HAVE_STRING_FORMAT": True,
     "HAVE_CLOSURES": True,
-    "HAVE_BYTEARRAY": False,
+    "HAVE_BYTEARRAY": True,
     "HAVE_DEBUG_INFO": True,
     "HAVE_SNPRINTF_FORMAT": False,
     "HAVE_AUTOBOX": True,

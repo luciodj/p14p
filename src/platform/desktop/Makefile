@@ -19,8 +19,8 @@ ifeq ($(DEBUG),true)
 else
     CDEBUGS += -Os
 endif
-CFLAGS = -Wall -fno-strict-aliasing -Wstrict-prototypes \
-         -Wdeclaration-after-statement -Werror $(CDEBUGS) $(CINCS)
+CFLAGS =  -fno-strict-aliasing -Wstrict-prototypes \
+         -Wdeclaration-after-statement  $(CDEBUGS) $(CINCS)
 
 export CFLAGS IPM PM_LIB_FN
 
@@ -33,7 +33,7 @@ $(PM_LIB_PATH) : ../../vm/*.c ../../vm/*.h
 	make -C ../../vm
 
 $(TARGET).out : $(OBJS) $(PM_LIB_PATH)
-	$(CC) -lm -o $@ $(OBJS) $(PM_LIB_PATH)
+	$(CC) -lm -v -o $@ $(OBJS) $(PM_LIB_PATH)
 
 pmfeatures.h : pmfeatures.py $(PMGENPMFEATURES)
 	$(PMGENPMFEATURES) pmfeatures.py > $@

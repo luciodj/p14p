@@ -15,4 +15,18 @@
 #
 
 import ipm
-ipm.ipm()
+class Led(object):
+    def __init__(self, pin):
+        self.pin = pin
+
+    def set(self, value):
+        print 'pin [', self.pin, ']=', value
+        _pin(self.pin, 1)
+
+def _pin(pin, config):
+    print config
+    pass
+
+LED = Led(10)
+
+ipm.ipm({"LED":LED, "_pin":_pin})

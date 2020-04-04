@@ -17,8 +17,12 @@
 
 #include "pm.h"
 
+<<<<<<< HEAD:src/platform/_unmaintained/arduino_mega/main.c
 #define HEAP_SIZE 0x1D00
 
+=======
+#define HEAP_SIZE 16000
+>>>>>>> e007b1f... small updates to desktop and desktop64 to build:src/platform/desktop/main.c
 
 extern unsigned char usrlib_img[];
 

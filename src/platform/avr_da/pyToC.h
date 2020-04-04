@@ -3,6 +3,7 @@
  */
 
 #include "pm.h"
+#include "stdbool.h"
 
 /** Raise an exception unless the given expression is true.
  *  This MUST be called from the C implementation of a 
@@ -139,6 +140,11 @@
       "Expected %u arguments, but received %u.", (uint16_t) (u8_numArgs), \
       (uint16_t) NATIVE_GET_NUM_ARGS())
 
+
+PmReturn_t
+getRangedUint8(pPmObj_t ppo,
+  uint8_t u8_min, uint8_t u8_max, uint8_t* pu8_val);
+
 /** Get an integer from a Python object,
  *  requiring that the integer lie winin a minimum and minimum value.
  *  Raises errors as necessary.
@@ -195,7 +201,7 @@ getUint32(pPmObj_t ppo, uint32_t* pu32_val);
  *  \return Standard Python return value.
  */
 PmReturn_t
-getBool(pPmObj_t ppo, bool_t* pb_bool);
+getBool(pPmObj_t ppo, bool* pb_bool);
 
 /** Get a floating-point value from a Python
  *  object. Raises errors as necessary.

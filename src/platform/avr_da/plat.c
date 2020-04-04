@@ -107,16 +107,6 @@ plat_init(void)
     TCA0.SINGLE.INTCTRL = 1; /* enable OVF interrupt */
     /* Global interrupt enable */
     sei();
-    // puts("Plat Init");
-    /* test loop */
-    // while(1) {
-        // puts("Hello AVR-DA!");
-        // _delay_ms(500);
-        // uart_putc( uart_getc(stdin), stdout);
-    // unsigned char  const * paddr = usrlib_img;
-    // for(int i=0; i<30; i++){
-        // printf("%02x ", plat_memGetByte(MEMSPACE_PROG, &paddr));
-    // }
     return PM_RET_OK;
 }
 

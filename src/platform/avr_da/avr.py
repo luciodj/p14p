@@ -301,6 +301,12 @@ def _spi_xfer(instance, data):
 #
 #   ADC support
 #
+# ADC = Adc(); # init
+# ADC.get(TEMP) #-> return temp sensor reading
+# ADC.get(GND)  #-> 0 reading (check)
+# ADC.get(DAC)  #-> DAC internal pick
+# ADC.get(0-15) #-> read analog pin 0-15
+
 class Adc(object):
     TEMP = 0x42
     DAC  = 0x48
@@ -346,4 +352,59 @@ def _adc_get(channel):
     NATIVE_SET_TOS(pVal);
     return retval;
     '''
+    pass
+
+##
+# TCA module
+# 
+
+class Tca(object):
+    def __init__(self, period_us=20000, duty0=1000, duty1=None, duty2=None):
+        self.duty = [duty0, duty1, duty2]
+        # if None, channel won't be enabled
+        if duty0: _tca_set(0, duty0) 
+        if duty1: _tca_set(1, duty1)
+        if duty2: _tca_set(2, duty2)
+        _tca_init( period_us, duty0!=None, duty1!=None, duty2!=None)
+        
+    def set(self, id, duty_us):
+        self.duty[id] = duty_us 
+        _tca_set(id, duty_us)
+
+def _tca_set(instance, duty):
+    """___NATIVE___
+    PmReturn_t retval = PM_RET_OK;
+
+    CHECK_NUM_ARGS(2);
+
+    uint8_t instance;
+    pPmObj_t pi = NATIVE_GET_LOCAL(0);
+    PM_CHECK_FUNCTION( getRangedUint8(pi, 0, 2, &instance));
+
+    uint32_t duty;
+    pa = NATIVE_GET_LOCAL(1);
+    PM_CHECK_FUNCTION( getRangedInt(pa, 0, 65535, &duty));
+
+    avr_tca_set(instance, duty);    
+    """
+    pass
+
+def _tca_init(period, b0, b1, b2):
+    """___NATIVE___
+    PmReturn_t retval = PM_RET_OK;
+
+    CHECK_NUM_ARGS(4);
+
+    uint8_t period;
+    pPmObj_t pi = NATIVE_GET_LOCAL(0);
+    PM_CHECK_FUNCTION( getRangedUint8(pi, 1, 65535, &period));
+
+    bool b0, b1, b2;
+    GET_BOOL_ARG(1, &b0);
+    GET_BOOL_ARG(2, &b1);
+    GET_BOOL_ARG(3, &b2);
+
+    avr_tca_init(period, b0, b1, b2);
+
+    """
     pass

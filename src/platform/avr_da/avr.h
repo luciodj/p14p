@@ -22,3 +22,6 @@ void avr_spi_xfer(uint8_t instance, uint8_t size, uint8_t *pb);
 
 void avr_adc_config(void);
 uint16_t avr_adc_get(uint8_t channel);
+
+void avr_tca_set(uint8_t instance, uint16_t duty_us);
+void avr_tca_init(uint16_t period_us, bool out0, bool out1, bool out2);

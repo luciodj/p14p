@@ -150,3 +150,25 @@ uint16_t avr_adc_get(uint8_t channel)
 	ADC0.INTFLAGS = ADC_RESRDY_bm;  // clar flag
 	return res;
 }
+
+void avr_tca_init(uint16_t period_us, bool out0, bool out1, bool out2) 
+{
+    /* Set TCA prescaler to div8  Enable TCA interrupt */
+    TCA0.SINGLE.CTRLA = TCA_SINGLE_CLKSEL_DIV8_gc /* Clock Selection: System Clock / 8 -> 3MHz*/
+                | 1 << TCA_SINGLE_ENABLE_bp; /* Module Enable: enabled */
+
+    TCA0.SINGLE.CTRLB = 0 << TCA_SINGLE_ALUPD_bp /* Auto Lock Update: disabled */
+                | out0 << TCA_SINGLE_CMP0EN_bp /* Compare 0 disabled */
+                | out1 << TCA_SINGLE_CMP1EN_bp /* Compare 1 disabled */
+                | out2 << TCA_SINGLE_CMP2EN_bp /* Compare 2 disabled */
+                | TCA_SINGLE_WGMODE_SINGLESLOPE_gc; /* Waveform generation mode: single slope */
+    TCA0.SINGLE.PER = period_us * 3 ; /* 3000 = 1ms period with clock @ 3MHz */
+    // TCA0.SINGLE.INTCTRL = 1; /* enable OVF interrupt */
+}
+
+void avr_tca_duty(uint8_t id, uint16_t duty_us)
+{
+    if (id == 0) TCA0.SINGLE.CMP0BUF = duty_us;
+    if (id == 1) TCA0.SINGLE.CMP1BUF = duty_us;
+    if (id == 2) TCA0.SINGLE.CMP2BUF = duty_us;
+}

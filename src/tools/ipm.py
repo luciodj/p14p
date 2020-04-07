@@ -161,7 +161,7 @@ class SerialConnection(Connection):
     def read(self,):
         """Yields each character as it arrives, observing the escape character.
         """
-        b = bytearray()
+        # b = bytearray()
         c = None
         while True:
             # while(self.s.in_waiting==0): pass

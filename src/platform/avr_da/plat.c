@@ -33,10 +33,9 @@
 
 #include "pm.h"
 
-/* Hint: 1,000,000 /s * 256 T/C0 clock cycles per tick * 8 CPU clocks per
- * T/C0 clock cycle / x,000,000 CPU clock cycles per second -> �s per tick
+/* adjust depending on RTC-PIT oscillator selected and prescaler applied
  */
-#define PLAT_TIME_PER_TICK_USEC (1000)
+#define PLAT_TIME_PER_TICK_USEC (975) // micro seconds between interrupts
 
 
 /* Configure stdin, stdout, stderr */
@@ -93,17 +92,36 @@ plat_init(void)
 
     stdin = stdout = stderr = &avr_uart;
 
-    /* Set TCA prescaler to div8  Enable TCA interrupt */
-    TCA0.SINGLE.CTRLA = TCA_SINGLE_CLKSEL_DIV8_gc /* Clock Selection: System Clock / 8 -> 3MHz*/
-                | 1 << TCA_SINGLE_ENABLE_bp; /* Module Enable: enabled */
+    //RTC_SetPITIsrCallback(timeout_isr);
+    // Wait for RTC register synchronization
+    while (RTC.STATUS > 0);
+    RTC.CTRLA &= ~RTC_RTCEN_bm;         // Disable the RTC module
 
-    TCA0.SINGLE.CTRLB = 0 << TCA_SINGLE_ALUPD_bp /* Auto Lock Update: disabled */
-                | 0 << TCA_SINGLE_CMP0EN_bp /* Compare 0 disabled */
-                | 0 << TCA_SINGLE_CMP1EN_bp /* Compare 1 disabled */
-                | 0 << TCA_SINGLE_CMP2EN_bp /* Compare 2 disabled */
-                | TCA_SINGLE_WGMODE_SINGLESLOPE_gc; /* Waveform generation mode: single slope */
-    TCA0.SINGLE.PER = 3000; /* 1ms Period @ 3MHz */
-    TCA0.SINGLE.INTCTRL = 1; /* enable OVF interrupt */
+    // Wait for PIT register synchronization
+    while (RTC.PITSTATUS > 0);
+    RTC.PITCTRLA &= ~RTC_PITEN_bm;      // Disable the PIT module
+
+    // Wait for OSCULP32K to be stable (just in case)
+    while (!(CLKCTRL.MCLKSTATUS & CLKCTRL_OSC32KS_bm)); // use internal 32k clock
+    // CLKCTRL.XOSC32KCTRLA = CLKCTRL_ENABLE_bm; // enable external 32K clock and mux I/O pins
+    // while (!(CLKCTRL.MCLKSTATUS & CLKCTRL_XOSC32KS_bm)); // use external 32k clock
+
+    // Wait for RTC register synchronization
+    while (RTC.STATUS > 0);
+    RTC.CLKSEL = RTC_CLKSEL_OSC32K_gc;   // select 32kHz mode
+
+    // Wait for PIT register synchronization
+    while (RTC.PITSTATUS > 0);
+    RTC.PITINTCTRL |= RTC_PI_bm;        
+
+    // Wait for PIT register synchronization
+    while (RTC.PITSTATUS > 0);
+    RTC.PITCTRLA = RTC_PERIOD_CYC32_gc;  // 4 msec match SCHEDULER_BASE_PERIOD
+
+    // Wait for PIT register synchronization
+	while (RTC.PITSTATUS > 0);
+    RTC.PITCTRLA |= RTC_PITEN_bm;       // enable PIT function
+
     /* Global interrupt enable */
     sei();
     return PM_RET_OK;
@@ -134,6 +152,11 @@ ISR(TCA0_OVF_vect)
     TCA0.SINGLE.INTFLAGS = 1; /* clear interrupt flag */
 }
 
+ISR(RTC_PIT_vect)
+{
+    pm_vmPeriodic(PLAT_TIME_PER_TICK_USEC);
+    RTC.PITINTFLAGS = RTC_PI_bm; /* clear interrupt flag */
+}
 
 /*
  * Gets a byte from the address in the designated memory space

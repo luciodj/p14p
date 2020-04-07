@@ -164,7 +164,7 @@ COFFCONVERT=$(OBJCOPY) --debugging \
 # PyMite: Build the VM archive if it doesn't exist
 pmvm : $(PM_LIB_PATH)
 
-$(PM_LIB_PATH) : ../../vm/*.c ../../vm/*.h
+$(PM_LIB_PATH) : ../../vm/*.c  ../../vm/*.h  ../../lib/*.py
 	make -C ../../vm
 
 #$(TARGET)_nat.c $(TARGET)_img.c: $(PM_USR_SOURCES) pmfeatures.py

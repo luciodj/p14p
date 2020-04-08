@@ -365,14 +365,14 @@ class Tca(object):
         if duty0: _tca_set(0, duty0) 
         if duty1: _tca_set(1, duty1)
         if duty2: _tca_set(2, duty2)
-        _tca_init( period_us, duty0!=None, duty1!=None, duty2!=None)
+        _tca_config( period_us, duty0!=None, duty1!=None, duty2!=None)
         
     def set(self, id, duty_us):
         self.duty[id] = duty_us 
         _tca_set(id, duty_us)
 
 def _tca_set(instance, duty):
-    """___NATIVE___
+    """__NATIVE__
     PmReturn_t retval = PM_RET_OK;
 
     CHECK_NUM_ARGS(2);
@@ -381,30 +381,37 @@ def _tca_set(instance, duty):
     pPmObj_t pi = NATIVE_GET_LOCAL(0);
     PM_CHECK_FUNCTION( getRangedUint8(pi, 0, 2, &instance));
 
-    uint32_t duty;
-    pa = NATIVE_GET_LOCAL(1);
-    PM_CHECK_FUNCTION( getRangedInt(pa, 0, 65535, &duty));
+    int32_t duty;
+    pPmObj_t pa = NATIVE_GET_LOCAL(1);
+    PM_CHECK_FUNCTION( getRangedInt(pa, 0, 65535L, &duty));
 
-    avr_tca_set(instance, duty);    
-    """
+    avr_tca_set(instance, (uint16_t) duty);    
+
+    NATIVE_SET_TOS(PM_NONE);
+    return retval;
+   """
     pass
 
-def _tca_init(period, b0, b1, b2):
-    """___NATIVE___
+def _tca_config(period, b0, b1, b2):
+    """__NATIVE__
     PmReturn_t retval = PM_RET_OK;
 
     CHECK_NUM_ARGS(4);
 
-    uint8_t period;
+    int32_t period;
     pPmObj_t pi = NATIVE_GET_LOCAL(0);
-    PM_CHECK_FUNCTION( getRangedUint8(pi, 1, 65535, &period));
+    PM_CHECK_FUNCTION( getRangedInt(pi, 1, 65535, &period));
 
     bool b0, b1, b2;
     GET_BOOL_ARG(1, &b0);
     GET_BOOL_ARG(2, &b1);
     GET_BOOL_ARG(3, &b2);
 
-    avr_tca_init(period, b0, b1, b2);
+    printf("TCA0 period %ld, %d\\n", period, b0);
 
+    avr_tca_config((uint16_t) period, b0, b1, b2);
+
+    NATIVE_SET_TOS(PM_NONE);
+    return retval;
     """
     pass

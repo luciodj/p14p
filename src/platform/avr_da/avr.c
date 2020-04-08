@@ -151,24 +151,30 @@ uint16_t avr_adc_get(uint8_t channel)
 	return res;
 }
 
-void avr_tca_init(uint16_t period_us, bool out0, bool out1, bool out2) 
+void avr_tca_config(uint16_t period_us, bool out0, bool out1, bool out2) 
 {
     /* Set TCA prescaler to div8  Enable TCA interrupt */
     TCA0.SINGLE.CTRLA = TCA_SINGLE_CLKSEL_DIV8_gc /* Clock Selection: System Clock / 8 -> 3MHz*/
                 | 1 << TCA_SINGLE_ENABLE_bp; /* Module Enable: enabled */
 
     TCA0.SINGLE.CTRLB = 0 << TCA_SINGLE_ALUPD_bp /* Auto Lock Update: disabled */
-                | out0 << TCA_SINGLE_CMP0EN_bp /* Compare 0 disabled */
-                | out1 << TCA_SINGLE_CMP1EN_bp /* Compare 1 disabled */
-                | out2 << TCA_SINGLE_CMP2EN_bp /* Compare 2 disabled */
+                | 1 << TCA_SINGLE_CMP0EN_bp /* Compare 0 disabled */
+                | 1 << TCA_SINGLE_CMP1EN_bp /* Compare 1 disabled */
+                | 1 << TCA_SINGLE_CMP2EN_bp /* Compare 2 disabled */
                 | TCA_SINGLE_WGMODE_SINGLESLOPE_gc; /* Waveform generation mode: single slope */
     TCA0.SINGLE.PER = period_us * 3 ; /* 3000 = 1ms period with clock @ 3MHz */
     // TCA0.SINGLE.INTCTRL = 1; /* enable OVF interrupt */
+
+    // configure TCA MUX ; TODO make mux user configurable
+    PORTMUX.TCAROUTEA = 2; // select PORTC pins 0-5
+    avr_pin_config(16, PINCFG_OUTPUT);  //pin C0  
+    avr_pin_config(17, PINCFG_OUTPUT);  //pin C1  
+    avr_pin_config(18, PINCFG_OUTPUT);  //pin C2  
 }
 
-void avr_tca_duty(uint8_t id, uint16_t duty_us)
+void avr_tca_set(uint8_t id, uint16_t duty_us)
 {
-    if (id == 0) TCA0.SINGLE.CMP0BUF = duty_us;
-    if (id == 1) TCA0.SINGLE.CMP1BUF = duty_us;
-    if (id == 2) TCA0.SINGLE.CMP2BUF = duty_us;
+    if (id == 0) TCA0.SINGLE.CMP0 = duty_us*3;
+    if (id == 1) TCA0.SINGLE.CMP1 = duty_us*3;
+    if (id == 2) TCA0.SINGLE.CMP2 = duty_us*3;
 }

@@ -25,5 +25,5 @@ ADC = Adc()
 #         i += 1
 #     return time()-t - 250*times/1000 # remove the empty function call cost
 
-ipm.ipm({"ADC":ADC, "LED":LED, "BTN":BTN, "Pin":Pin, "Spi":Spi, "delay":delay})
+ipm.ipm({"ADC":ADC, "LED":LED, "BTN":BTN, "Pin":Pin, "Tca":Tca, "Spi":Spi, "delay":delay})
 # ipm.ipm()

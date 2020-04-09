@@ -6,12 +6,21 @@
 
 # PyMite Configuration
 PLATFORM = avr_da
-PM_LIB_ROOT = pmvm_$(PLATFORM)
-PM_LIB_FN = lib$(PM_LIB_ROOT).a
-PM_LIB_PATH = ../../vm/$(PM_LIB_FN)
-PM_USR_SOURCES = main.py avr.py
+
+PM_LIB_PY_SOURCES = ../../lib/list.py \
+                   ../../lib/dict.py \
+                   ../../lib/__bi.py \
+                   ../../lib/sys.py \
+                   ../../lib/string.py
+ifeq ($(IPM),true)
+	PM_LIB_PY_SOURCES += ../lib/ipm.py
+endif
+
+PLAT_PY_SOURCES = main.py avr.py 
+
 PMIMGCREATOR := ../../tools/pmCoCreator.py
 PMGENPMFEATURES := ../../tools/pmGenPmFeatures.py
+
 IPM = true
 DEBUG = true
 
@@ -19,9 +28,15 @@ DEBUG = true
 MCU = avr128da48
 FORMAT = ihex
 TARGET = main
-SRC = $(TARGET).c plat.c pm_generated_objs.c pm_generated_types.h
 F_CPU = 24000000UL
-SRC = $(TARGET).c plat.c  $(TARGET)_nat.c $(TARGET)_img.c  pyToC.c avr.c
+PLAT_C_SOURCES = $(TARGET).c plat.c  pyToC.c avr.c
+SRC = $(PLAT_C_SOURCES) pm_generated_objs.c
+VM_SRC = ../../vm/bytearray.c ../../vm/class.c ../../vm/codeobj.c ../../vm/dict.c \
+         ../../vm/frame.c ../../vm/func.c ../../vm/heap.c ../../vm/int.c \
+         ../../vm/interp.c ../../vm/list.c ../../vm/marshal.c ../../vm/module.c \
+         ../../vm/obj.c ../../vm/pm.c ../../vm/seglist.c ../../vm/seq.c \
+         ../../vm/sli.c ../../vm/strobj.c ../../vm/thread.c ../../vm/tuple.c 
+
 ASRC =
 OPT = s
 
@@ -62,8 +77,6 @@ CWARN =  -Wall -Wstrict-prototypes #-Werror
 CTUNING = -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums
 #CEXTRA = -Wa,-adhlns=$(<:.c=.lst)
 CFLAGS = $(CDEBUG) $(CDEFS) $(CINCS) -O$(OPT) $(CWARN) $(CSTANDARD) $(CTUNING) $(CEXTRA)
-
-
 #ASFLAGS = -Wa,-adhlns=$(<:.S=.lst),-gstabs
 
 
@@ -102,7 +115,7 @@ EXTMEMOPTS =
 #LDMAP = $(LDFLAGS) -Wl,-Map=$(TARGET).map,--cref
 LDFLAGS = $(EXTMEMOPTS) $(LDMAP) $(PRINTF_LIB) $(SCANF_LIB) $(MATH_LIB)
 # PyMite
-LDFLAGS += -L../../vm -l$(PM_LIB_ROOT) -L.
+# LDFLAGS +=  -L.
 
 
 # Programming support using drag 'n drop. Settings and variables.
@@ -120,7 +133,7 @@ COPY = cp
 
 
 # Define all object files.
-OBJ = $(SRC:.c=.o) $(ASRC:.S=.o)
+OBJ = $(SRC:.c=.o) $(ASRC:.S=.o) $(VM_SRC:.c=.o)
 
 # Define all listing files.
 LST = $(ASRC:.S=.lst) $(SRC:.c=.lst)
@@ -137,7 +150,7 @@ COPY_FLAGS =
 # COPY_FLAGS =  -Y  # uncomment for WINDOWS users 
 
 # Default target.
-all: pmfeatures.h pmvm build
+all: pmfeatures.h  build
 
 build: elf hex eep
 
@@ -162,10 +175,15 @@ COFFCONVERT=$(OBJCOPY) --debugging \
 
 
 # PyMite: Build the VM archive if it doesn't exist
-pmvm : $(PM_LIB_PATH)
+# pmvm : $(PM_LIB_PATH)
 
-$(PM_LIB_PATH) : ../../vm/*.c  ../../vm/*.h  ../../lib/*.py
-	make -C ../../vm
+# ../../vm/*.o : ../../vm/*.c  ../../vm/*.h 
+# 	$(CC) -c $(ALL_CFLAGS) $< -o $@ 
+
+	# make -C ../../vm
+
+pm_generated_objs.c pm_generated_types.h : $(PM_LIB_PY_SOURCES) $(PLAT_PY_SOURCES) $(PMIMGCREATOR)
+	$(PMIMGCREATOR) .  $(PM_LIB_PY_SOURCES) $(PLAT_PY_SOURCES)
 
 #$(TARGET)_nat.c $(TARGET)_img.c: $(PM_USR_SOURCES) pmfeatures.py
 #	$(PMIMGCREATOR) -f pmfeatures.py -c -u --memspace=flash -o $(TARGET)_img.c --native-file=$(TARGET)_nat.c $(PM_USR_SOURCES)
@@ -197,7 +215,6 @@ extcoff: $(TARGET).elf
 # Create a symbol table from ELF output file.
 .elf.sym:
 	$(NM) -n $< > $@
-
 
 
 # Link: create ELF output file from object files.

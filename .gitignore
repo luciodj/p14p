@@ -8,8 +8,6 @@
 *.hex
 *.elf
 .DS_Store
+.vscode
 pmfeatures.h
-main_nat.c
-main_img.c
-pmstdlib_img.c
-pmstdlib_nat.c
+pm_generated*.

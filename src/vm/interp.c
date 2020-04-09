@@ -1740,7 +1740,7 @@ interpret(const uint8_t returnOnNoThreads)
                 if (obj_isFalse(TOS))
                 {
                     /* Jump to base_ip + arg */
-                    PM_IP = PM_FP->fo_func->f_co->co_codeaddr + t16;
+                    PM_IP = PM_FP->fo_func->f_co->co_code + t16;
                 }
                 if ((bc == POP_JUMP_IF_FALSE) || (!t8))
                 {
@@ -1753,7 +1753,7 @@ interpret(const uint8_t returnOnNoThreads)
                 if (!obj_isFalse(TOS))
                 {
                     /* Jump to base_ip + arg */
-                    PM_IP = PM_FP->fo_func->f_co->co_codeaddr + t16;
+                    PM_IP = PM_FP->fo_func->f_co->co_code + t16;
                 }
                 if ((bc == POP_JUMP_IF_TRUE) || t8)
                 {

@@ -152,17 +152,18 @@ COPY_FLAGS =
 # Default target.
 all: pmfeatures.h  build
 
-build: elf hex eep
+build: elf hex 
+# eep
 
 elf: $(TARGET).elf
 hex: $(TARGET).hex
-eep: $(TARGET).eep
-lss: $(TARGET).lss
-sym: $(TARGET).sym
+# eep: $(TARGET).eep
+# lss: $(TARGET).lss
+# sym: $(TARGET).sym
 
 
 # Program the device.  
-program: $(TARGET).hex $(TARGET).eep
+program: $(TARGET).hex # $(TARGET).eep
 	$(COPY)  $(COPY_FLAGS) $(TARGET).hex $(TARGET_DRIVE)code.hex
 
 
@@ -199,14 +200,15 @@ extcoff: $(TARGET).elf
 	$(COFFCONVERT) -O coff-ext-avr $(TARGET).elf $(TARGET).cof
 
 
-.SUFFIXES: .elf .hex .eep .lss .sym
+.SUFFIXES: .elf .hex 
+# .eep .lss .sym
 
 .elf.hex:
 	$(OBJCOPY) -O $(FORMAT) -R .eeprom $< $@
 
-.elf.eep:
-	-$(OBJCOPY) -j .eeprom --set-section-flags=.eeprom="alloc,load" \
-	--change-section-lma .eeprom=0 -O $(FORMAT) $< $@
+# .elf.eep:
+# 	-$(OBJCOPY) -j .eeprom --set-section-flags=.eeprom="alloc,load" \
+# 	--change-section-lma .eeprom=0 -O $(FORMAT) $< $@
 
 # Create extended listing file from ELF output file.
 .elf.lss:
@@ -243,8 +245,6 @@ clean:
 	$(REMOVE) $(TARGET).hex $(TARGET).eep $(TARGET).cof $(TARGET).elf \
 	$(TARGET).map $(TARGET).sym $(TARGET).lss \
 	$(OBJ) $(LST) $(SRC:.c=.s) $(SRC:.c=.d)
-	$(REMOVE) $(TARGET)_img.*
-	$(REMOVE) $(TARGET)_nat.*
 
 depend:
 	if grep '^# DO NOT DELETE' $(MAKEFILE) >/dev/null; \
@@ -257,6 +257,6 @@ depend:
 		>> $(MAKEFILE); \
 	$(CC) -M -mmcu=$(MCU) $(CDEFS) $(CINCS) $(SRC) $(ASRC) >> $(MAKEFILE)
 
-.PHONY:	all build elf hex eep lss sym program coff extcoff clean depend pmvm
+.PHONY:	all build elf hex program coff extcoff clean depend
 
 export CC OBJCOPY NM CFLAGS ALL_CFLAGS AR IPM PM_LIB_FN

@@ -17,7 +17,7 @@
 
 #include "pm.h"
 
-#define HEAP_SIZE 15000
+#define HEAP_SIZE 10000
 
 #include <stdio.h>
 
@@ -26,11 +26,17 @@ int main(void)
     uint8_t heap[HEAP_SIZE] ;
     PmReturn_t retval;
 
+    retval = plat_init();
+    PM_RETURN_IF_ERROR(retval);
+    // printf("plat returned:%d", retval);
+    
     while (1) {
-        retval = pm_init(heap, HEAP_SIZE);
-        PM_RETURN_IF_ERROR(retval);
-        retval = pm_run((uint8_t *)"main");
-        puts("\nRestarting...\x4");
+    retval = pm_init(heap, HEAP_SIZE);
+    printf("pm_init returned:%d", retval);
+    PM_RETURN_IF_ERROR(retval);
+    retval = pm_run((uint8_t *)"main");
+    printf("pm_run returned : %d", retval);
+    puts("\nRestarting...");
     }
     return (int)retval;
 }

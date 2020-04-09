@@ -356,9 +356,11 @@ heap_init(uint8_t *base, uint32_t size)
     uint8_t *adjbase;
 
     /* Round-up Heap base by the size of the platform pointer */
-    adjbase = base + ((sizeof(intptr_t) - 1) & ~(sizeof(intptr_t) - 1));
+    // adjbase = base + ((sizeof(intptr_t) - 1) & ~(sizeof(intptr_t) - 1));
+    adjbase = (uint8_t*)((uint16_t) (base + (PM_PLAT_POINTER_SIZE - 1)) & ~(PM_PLAT_POINTER_SIZE - 1));
     pmHeap.base = adjbase;
     pmHeap.size = size - (adjbase - base);
+    // printf("heap base %04x\n", (uint16_t) pmHeap.base);
 
 #if __DEBUG__
     /* Fill the heap with a non-NULL value to bring out any heap bugs. */
@@ -532,7 +534,6 @@ heap_getChunk(uint16_t requestedsize, uint8_t **r_pchunk)
 
     /* Attempt to get a chunk */
     retval = heap_getChunkImpl(adjustedsize, r_pchunk);
-
     /* Perform GC if out of memory, gc is enabled and not in native session */
     if ((retval == PM_RET_EX_MEM) && (pmHeap.auto_gc == C_TRUE)
         && (gVmGlobal.nativeframe.nf_active == C_FALSE))
@@ -550,6 +551,7 @@ heap_getChunk(uint16_t requestedsize, uint8_t **r_pchunk)
 #if defined(PM_PLAT_POINTER_SIZE) && (PM_PLAT_POINTER_SIZE == 8)
         C_ASSERT(((intptr_t)*r_pchunk & 7) == 0);
 #else
+// printf("heap_getChunk Addr: %04lx\n", ((long)*r_pchunk));       
         C_ASSERT(((intptr_t)*r_pchunk & 3) == 0);
 #endif
     }

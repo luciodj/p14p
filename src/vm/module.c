@@ -80,6 +80,7 @@ mod_import(pPmObj_t pstr, pPmObj_t *pmod)
     /* If it's not a string obj, raise SyntaxError */
     if (OBJ_GET_TYPE(pstr) != OBJ_TYPE_STR)
     {
+    printf("wrong type in module returns %x\n", OBJ_GET_TYPE(pstr));
         PM_RAISE(retval, PM_RET_EX_SYNTAX);
         return retval;
     }

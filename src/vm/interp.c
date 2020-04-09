@@ -1736,11 +1736,12 @@ interpret(const uint8_t returnOnNoThreads)
                 continue;
 
             case JUMP_IF_FALSE:
+            case POP_JUMP_IF_FALSE:
                 PUT_BC_ARG_INTO(t16);
                 if (obj_isFalse(TOS))
                 {
                     /* Jump to base_ip + arg */
-                    PM_IP = PM_FP->fo_func->f_co->co_code + t16;
+                    PM_IP = t16;
                 }
                 if ((bc == POP_JUMP_IF_FALSE) || (!t8))
                 {
@@ -1749,11 +1750,12 @@ interpret(const uint8_t returnOnNoThreads)
                continue;
 
             case JUMP_IF_TRUE:
+            case POP_JUMP_IF_TRUE:
                 PUT_BC_ARG_INTO(t16);
                 if (!obj_isFalse(TOS))
                 {
                     /* Jump to base_ip + arg */
-                    PM_IP = PM_FP->fo_func->f_co->co_code + t16;
+                    PM_IP = t16;
                 }
                 if ((bc == POP_JUMP_IF_TRUE) || t8)
                 {

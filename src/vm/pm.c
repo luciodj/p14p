@@ -59,6 +59,7 @@ pm_loadBuiltins(void)
     pPmObj_t pbimod;
 
     /* Import the builtins */
+    printf("--bi string: %08lx\n", *((uint32_t *)PM_BI_STR));
     retval = mod_import(PM_BI_STR, &pbimod);
     PM_RETURN_IF_ERROR(retval);
 
@@ -94,6 +95,7 @@ pm_init(uint8_t *heap_base, uint32_t heap_size)
 
     /* Initialize the heap and the globals */
     retval = heap_init(heap_base, heap_size);
+    // printf("heap_init returned: %d\n", retval);
     PM_RETURN_IF_ERROR(retval);
 
     /* Clear the global struct */
@@ -112,10 +114,12 @@ pm_init(uint8_t *heap_base, uint32_t heap_size)
 
     /* Create empty threadList */
     retval = list_new(&pobj);
+    // printf("list_new returned: %x\n", retval);
     gVmGlobal.threadList = (pPmList_t)pobj;
 
     /* Load builtins module */
     retval = pm_loadBuiltins();
+    printf("load_builtins returned: %x\n", retval);
     PM_RETURN_IF_ERROR(retval);
 
     return retval;

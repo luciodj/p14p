@@ -17,8 +17,8 @@
 
 #include <avr/pgmspace.h>
 
-#define PM_PLAT_POINTER_SIZE    2
+#define PM_PLAT_POINTER_SIZE    4
 #define PM_PLAT_HEAP_ATTR       __attribute__((aligned (4)))
-#define PM_PLAT_PROGMEM         const PROGMEM
+#define PM_PLAT_PROGMEM        const
 
 #endif /* _PLAT_H_ */

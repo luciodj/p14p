@@ -91,7 +91,7 @@ int
 sli_strcmp(char const *s1, char const *s2)
 {
     /* While not at either strings' end and they're same */
-    while ((*s1 != C_NULL) && (*s2 != C_NULL) && (*s1 == *s2))
+    while ((s1 != C_NULL) && (s2 != C_NULL) && (*s1 == *s2))
     {
         s1++;
         s2++;

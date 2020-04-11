@@ -42,7 +42,7 @@
 # Blocking delays:
 #   delay(500) # ms
 #
-# SPI example # sck, mosi, miso must match the selected instance default pins
+# SPI example # sck, mosi, miso must match the selected inst default pins
 #   oled = SPI(0, mode=0, sck=40, mosi=41, miso=42, frequency=4000000)
 #   oled.transfer(bytearray(1,2,3,4))
 # 
@@ -208,9 +208,9 @@ def _pin_config(pin_no, config):
 #
 class Spi(object):
     "Synchronous Port Interface"
-    def __init__(self, instance, mode=0, freq=8000000,  mosi=4, miso=5, msck=6):
-        self.id = instance
-        self.freq = _spi_config(instance, mode, freq, mosi, miso, msck)
+    def __init__(self, inst, mode=0, freq=8000000,  mosi=4, miso=5, msck=6):
+        self.id = inst
+        self.freq = _spi_config(inst, mode, freq, mosi, miso, msck)
 
     def xfer(self, data):
         return _spi_xfer(self.id, data)
@@ -220,16 +220,16 @@ class Spi(object):
 #oled = Spi(0, 0, 3000000) 
 #oled.xfer(bytearray([1,2,3,4]))
 
-def _spi_config(instance, mode, frequency, mosi, miso, msck):
+def _spi_config(inst, mode, frequency, mosi, miso, msck):
     """__NATIVE__
     // computes best prescaler approx -> returns actual frequency 
     PmReturn_t retval = PM_RET_OK;
 
     CHECK_NUM_ARGS(6);
 
-    uint8_t instance;
+    uint8_t inst;
     pPmObj_t pa = NATIVE_GET_LOCAL(0);
-    PM_CHECK_FUNCTION( getRangedUint8(pa, 0, 1, &instance));
+    PM_CHECK_FUNCTION( getRangedUint8(pa, 0, 1, &inst));
 
     uint8_t mode;
     pa = NATIVE_GET_LOCAL(1);
@@ -254,26 +254,26 @@ def _spi_config(instance, mode, frequency, mosi, miso, msck):
     PM_CHECK_FUNCTION( getRangedUint8(pa, 0, 48, &msck));
     avr_pin_config(msck, 1); // output
     
-    retval = int_new( avr_spi_config(instance, mode, frequency), &pa);
+    retval = int_new( avr_spi_config(inst, mode, frequency), &pa);
 
     NATIVE_SET_TOS(pa);
     return retval;
     """
     pass
 
-def _spi_xfer(instance, data):
+def _spi_xfer(inst, data):
     '''__NATIVE__
     PmReturn_t retval = PM_RET_OK;
     pPmObj_t pba;
 
     CHECK_NUM_ARGS(2);
 
-    uint8_t instance;
+    uint8_t inst;
     pPmObj_t pi = NATIVE_GET_LOCAL(0);
-    PM_CHECK_FUNCTION( getRangedUint8(pi, 0, 1, &instance));
+    PM_CHECK_FUNCTION( getRangedUint8(pi, 0, 1, &inst));
 
     pPmObj_t po = NATIVE_GET_LOCAL(1);
-    if (OBJ_GET_TYPE(po) != OBJ_TYPE_CLI) { // must be a class instance 
+    if (OBJ_GET_TYPE(po) != OBJ_TYPE_CLI) { // must be a class inst 
         PM_RAISE(retval, PM_RET_EX_TYPE);
         return retval;
     }
@@ -291,7 +291,7 @@ def _spi_xfer(instance, data):
     uint8_t n = ((pPmBytearray_t)pba)->length;
     uint8_t *pb = ((pPmBytearray_t)pba)->val->val;
 
-    avr_spi_xfer(instance, n, pb);
+    avr_spi_xfer(inst, n, pb);
 
     NATIVE_SET_TOS(po);
     return retval;
@@ -359,57 +359,66 @@ def _adc_get(channel):
 # 
 
 class Tca(object):
-    def __init__(self, period_us=20000, duty0=1000, duty1=None, duty2=None):
+    def __init__(self, inst, period_us=20000, duty0=1000, duty1=None, duty2=None):
+        self.inst = inst
         self.duty = [duty0, duty1, duty2]
         # if None, channel won't be enabled
         if duty0: _tca_set(0, duty0) 
         if duty1: _tca_set(1, duty1)
         if duty2: _tca_set(2, duty2)
-        _tca_config( period_us, duty0!=None, duty1!=None, duty2!=None)
+        _tca_config( inst, period_us, duty0!=None, duty1!=None, duty2!=None)
         
-    def set(self, id, duty_us):
+    def set(self, chan, duty_us):
         self.duty[id] = duty_us 
-        _tca_set(id, duty_us)
+        _tca_set(self.inst, chan, duty_us)
 
-def _tca_set(instance, duty):
+def _tca_set(inst, chan, duty):
     """__NATIVE__
     PmReturn_t retval = PM_RET_OK;
 
-    CHECK_NUM_ARGS(2);
+    CHECK_NUM_ARGS(3);
 
-    uint8_t instance;
+    uint8_t inst;
     pPmObj_t pi = NATIVE_GET_LOCAL(0);
-    PM_CHECK_FUNCTION( getRangedUint8(pi, 0, 2, &instance));
+    PM_CHECK_FUNCTION( getRangedUint8(pi, 0, 1, &inst));
+
+    uint8_t chan;
+    pPmObj_t pc = NATIVE_GET_LOCAL(0);
+    PM_CHECK_FUNCTION( getRangedUint8(pc, 0, 2, &chan));
 
     int32_t duty;
     pPmObj_t pa = NATIVE_GET_LOCAL(1);
     PM_CHECK_FUNCTION( getRangedInt(pa, 0, 65535L, &duty));
 
-    avr_tca_set(instance, (uint16_t) duty);    
+    avr_tca_set(inst, chan, (uint16_t) duty);    
 
     NATIVE_SET_TOS(PM_NONE);
     return retval;
    """
     pass
 
-def _tca_config(period, b0, b1, b2):
+def _tca_config(inst, period, b0, b1, b2):
     """__NATIVE__
     PmReturn_t retval = PM_RET_OK;
 
-    CHECK_NUM_ARGS(4);
+    CHECK_NUM_ARGS(5);
+
+    uint8_t inst;
+    pPmObj_t pi = NATIVE_GET_LOCAL(0);
+    PM_CHECK_FUNCTION( getRangedUint8(pi, 0, 1, &inst));
 
     int32_t period;
-    pPmObj_t pi = NATIVE_GET_LOCAL(0);
-    PM_CHECK_FUNCTION( getRangedInt(pi, 1, 65535, &period));
+    pPmObj_t pp = NATIVE_GET_LOCAL(1);
+    PM_CHECK_FUNCTION( getRangedInt(pp, 1, 65535, &period));
 
     bool b0, b1, b2;
-    GET_BOOL_ARG(1, &b0);
-    GET_BOOL_ARG(2, &b1);
-    GET_BOOL_ARG(3, &b2);
+    GET_BOOL_ARG(2, &b0);
+    GET_BOOL_ARG(3, &b1);
+    GET_BOOL_ARG(4, &b2);
 
-    printf("TCA0 period %ld, %d\\n", period, b0);
+    // printf("TCA0 period %ld, %d\\n", period, b0);
 
-    avr_tca_config((uint16_t) period, b0, b1, b2);
+    avr_tca_config(inst, (uint16_t) period, b0, b1, b2);
 
     NATIVE_SET_TOS(PM_NONE);
     return retval;

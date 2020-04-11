@@ -17,11 +17,11 @@ void avr_pin_config(uint8_t pin_no, uint8_t config);
 void avr_pin_set(uint8_t pin_no, uint8_t value);
 bool avr_pin_get(uint8_t pin_no); 
 
-uint32_t avr_spi_config(uint8_t instance, uint8_t mode, uint32_t frequency);
-void avr_spi_xfer(uint8_t instance, uint8_t size, uint8_t *pb);
+uint32_t avr_spi_config(uint8_t inst, uint8_t mode, uint32_t frequency);
+void avr_spi_xfer(uint8_t inst, uint8_t size, uint8_t *pb);
 
 void avr_adc_config(void);
 uint16_t avr_adc_get(uint8_t channel);
 
-void avr_tca_set(uint8_t instance, uint16_t duty_us);
-void avr_tca_config(uint16_t period_us, bool out0, bool out1, bool out2);
+void avr_tca_set(uint8_t inst, uint8_t chan, uint16_t duty_us);
+void avr_tca_config(uint8_t inst, uint16_t period_us, bool out0, bool out1, bool out2);

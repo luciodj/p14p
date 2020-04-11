@@ -9,7 +9,7 @@
 #include "avr.h"
 
 #undef __FILE_ID__
-#define __FILE_ID__ 0x70
+#define __FILE_ID__ 0x71
 
 
 /**
@@ -151,30 +151,51 @@ uint16_t avr_adc_get(uint8_t channel)
 	return res;
 }
 
-void avr_tca_config(uint16_t period_us, bool out0, bool out1, bool out2) 
+void avr_tca_config(uint8_t inst, uint16_t period_us, bool out0, bool out1, bool out2) 
 {
+    TCA_t *tca = &TCA0 + (inst & 1); // TCA0 or TCA1
     /* Set TCA prescaler to div8  Enable TCA interrupt */
-    TCA0.SINGLE.CTRLA = TCA_SINGLE_CLKSEL_DIV8_gc /* Clock Selection: System Clock / 8 -> 3MHz*/
+    tca->SINGLE.CTRLA = TCA_SINGLE_CLKSEL_DIV8_gc /* Clock Selection: System Clock / 8 -> 3MHz*/
                 | 1 << TCA_SINGLE_ENABLE_bp; /* Module Enable: enabled */
 
-    TCA0.SINGLE.CTRLB = 0 << TCA_SINGLE_ALUPD_bp /* Auto Lock Update: disabled */
+    tca->SINGLE.CTRLB = 0 << TCA_SINGLE_ALUPD_bp /* Auto Lock Update: disabled */
                 | 1 << TCA_SINGLE_CMP0EN_bp /* Compare 0 disabled */
                 | 1 << TCA_SINGLE_CMP1EN_bp /* Compare 1 disabled */
                 | 1 << TCA_SINGLE_CMP2EN_bp /* Compare 2 disabled */
                 | TCA_SINGLE_WGMODE_SINGLESLOPE_gc; /* Waveform generation mode: single slope */
-    TCA0.SINGLE.PER = period_us * 3 ; /* 3000 = 1ms period with clock @ 3MHz */
+    tca->SINGLE.PER = period_us * 3 ; /* 3000 = 1ms period with clock @ 3MHz */
     // TCA0.SINGLE.INTCTRL = 1; /* enable OVF interrupt */
 
-    // configure TCA MUX ; TODO make mux user configurable
-    PORTMUX.TCAROUTEA = 2; // select PORTC pins 0-5
+    /* configure TCA MUX ; TODO make mux user configurable
+    TCA1 MUX (<<3)
+    Value   Name    WO0 WO1 WO2 WO3 WO4 WO5
+    ---------------------------------------
+    0x0     PORTB   PB0 PB1 PB2 PB3 PB4 PB5
+    0x1     PORTC   PC4 PC5 PC6 -   -   -
+    0x2     PORTE   PE4 PE5 PE6 -   -   -
+    0x3     PORTG   PG0 PG1 PG2 PG3 PG4 PG5
+
+    TCA0 MUX (<<0)
+    Value   Name    WO0 WO1 WO2 WO3 WO4 WO5
+    ---------------------------------------
+    0x0     PORTA   PA0 PA1 PA2 PA3 PA4 PA5
+    0x1     PORTB   PB0 PB1 PB2 PB3 PB4 PB5
+    0x2     PORTC   PC0 PC1 PC2 PC3 PC4 PC5
+    0x3     PORTC   PD0 PD1 PD2 PD3 PD4 PD5
+    0x4     PORTE   PE0 PE1 PE2 PE3 PE4 PE5
+    0x5     PORTE   PF0 PF1 PF2 PF3 PF4 PF5
+    0x6     PORTG   PG0 PG1 PG2 PG3 PG4 PG5
+    */
+    PORTMUX.TCAROUTEA = 2; // select PORTC pins 0-2
     avr_pin_config(16, PINCFG_OUTPUT);  //pin C0  
     avr_pin_config(17, PINCFG_OUTPUT);  //pin C1  
     avr_pin_config(18, PINCFG_OUTPUT);  //pin C2  
 }
 
-void avr_tca_set(uint8_t id, uint16_t duty_us)
+void avr_tca_set(uint8_t inst, uint8_t chan, uint16_t duty_us)
 {
-    if (id == 0) TCA0.SINGLE.CMP0 = duty_us*3;
-    if (id == 1) TCA0.SINGLE.CMP1 = duty_us*3;
-    if (id == 2) TCA0.SINGLE.CMP2 = duty_us*3;
+    TCA_t *tca = &TCA0 + (inst & 1); // TCA0 or TCA1
+    if (chan == 0) tca->SINGLE.CMP0 = duty_us*3;
+    if (chan == 1) tca->SINGLE.CMP1 = duty_us*3;
+    if (chan == 2) tca->SINGLE.CMP2 = duty_us*3;
 }

@@ -255,6 +255,7 @@ plat_getByte(uint8_t *b)
     /* If a framing error or data overrun occur, raise an IOException */
     if (CDC_UART.RXDATAH & (USART_FERR_bm | USART_BUFOVF_bm))
     {
+        CDC_UART.RXDATAH = 0; // clear error
         PM_RAISE(retval, PM_RET_EX_IO);
         return retval;
     }

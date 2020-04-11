@@ -357,19 +357,26 @@ def _adc_get(channel):
 ##
 # TCA module
 # 
-
+# tca0 = Tca(0) # select TCA0 with a 20ms period PC0 output (1ms duty)
+# tca0.set(0, 2000) # change PC0 duty cycle to 2ms
+#
+# tca0 = Tca(0, 10000, 1000, 1000, 1000) # select TCA0, period = 10ms, 3 outputs (1ms each)
+# tca.set(0, 100) # PC0 = 100 us
+# tca.set(1, 200) # PC1 = 200 us
+# tca.set(2, 300) # PC2 = 300 us
+#
 class Tca(object):
     def __init__(self, inst, period_us=20000, duty0=1000, duty1=None, duty2=None):
         self.inst = inst
         self.duty = [duty0, duty1, duty2]
         # if None, channel won't be enabled
-        if duty0: _tca_set(0, duty0) 
-        if duty1: _tca_set(1, duty1)
-        if duty2: _tca_set(2, duty2)
+        if duty0: _tca_set(self.inst, 0, duty0) 
+        if duty1: _tca_set(self.inst, 1, duty1)
+        if duty2: _tca_set(self.inst, 2, duty2)
         _tca_config( inst, period_us, duty0!=None, duty1!=None, duty2!=None)
         
     def set(self, chan, duty_us):
-        self.duty[id] = duty_us 
+        self.duty[chan] = duty_us 
         _tca_set(self.inst, chan, duty_us)
 
 def _tca_set(inst, chan, duty):

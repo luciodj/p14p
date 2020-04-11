@@ -181,15 +181,22 @@ void avr_tca_config(uint8_t inst, uint16_t period_us, bool out0, bool out1, bool
     0x0     PORTA   PA0 PA1 PA2 PA3 PA4 PA5
     0x1     PORTB   PB0 PB1 PB2 PB3 PB4 PB5
     0x2     PORTC   PC0 PC1 PC2 PC3 PC4 PC5
-    0x3     PORTC   PD0 PD1 PD2 PD3 PD4 PD5
+    0x3     PORTD   PD0 PD1 PD2 PD3 PD4 PD5
     0x4     PORTE   PE0 PE1 PE2 PE3 PE4 PE5
-    0x5     PORTE   PF0 PF1 PF2 PF3 PF4 PF5
+    0x5     PORTF   PF0 PF1 PF2 PF3 PF4 PF5
     0x6     PORTG   PG0 PG1 PG2 PG3 PG4 PG5
     */
-    PORTMUX.TCAROUTEA = 2; // select PORTC pins 0-2
-    avr_pin_config(16, PINCFG_OUTPUT);  //pin C0  
-    avr_pin_config(17, PINCFG_OUTPUT);  //pin C1  
-    avr_pin_config(18, PINCFG_OUTPUT);  //pin C2  
+    if (inst == 0) {
+        PORTMUX.TCAROUTEA = (PORTMUX.TCAROUTEA & 0xf8) | 2; // TCA0-> PC0-2 
+        avr_pin_config(16, PINCFG_OUTPUT);  //pin C0  
+        avr_pin_config(17, PINCFG_OUTPUT);  //pin C1 
+        avr_pin_config(18, PINCFG_OUTPUT);  //pin C2  
+        PORTMUX.TCAROUTEA = (PORTMUX.TCAROUTEA & 0x7) | (0<<3); // TCA1-> PB0-2 
+    } else {
+        avr_pin_config( 8, PINCFG_OUTPUT);  //pin B0  
+        avr_pin_config( 9, PINCFG_OUTPUT);  //pin B1 
+        avr_pin_config(10, PINCFG_OUTPUT);  //pin B2  
+    }
 }
 
 void avr_tca_set(uint8_t inst, uint8_t chan, uint16_t duty_us)

@@ -18,22 +18,21 @@
 #include "pm.h"
 #include "avr/pgmspace.h"
 
-#define HEAP_SIZE 15000
+#define HEAP_SIZE 14000
 
 extern unsigned char  usrlib_img[];
 
-#include <stdio.h>
 
 int main(void)
 {      
-    uint8_t heap[HEAP_SIZE] __attribute__((aligned((4))));
     PmReturn_t retval;
+    uint8_t heap[HEAP_SIZE] __attribute__((aligned((4))));
 
     while (1) {
         retval = pm_init(heap, HEAP_SIZE, MEMSPACE_PROG, usrlib_img);
         PM_RETURN_IF_ERROR(retval);
         retval = pm_run((uint8_t *)"main");
-        puts("\nRestarting...\x4");
+        puts("Restarting...  ");
     }
     return (int)retval;
 }

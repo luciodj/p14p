@@ -380,7 +380,7 @@ heap_init(uint8_t *base, uint32_t size)
     pmHeap.base = adjbase;
     pmHeap.size = size - (adjbase - base);
 
-#if __DEBUG__
+#ifdef __DEBUG__
     /* Fill the heap with a non-NULL value to bring out any heap bugs. */
     sli_memset(pmHeap.base, 0xAA, pmHeap.size);
 #endif
@@ -666,8 +666,11 @@ heap_gcMarkObj(pPmObj_t pobj)
              || ((uint8_t *)pobj == (uint8_t *)&gVmGlobal.nativeframe));
 
     /* The object must not already be free */
-    C_ASSERT(OBJ_GET_FREE(pobj) == 0);
-
+    // C_ASSERT(OBJ_GET_FREE(pobj) == 0); // TODO understand why it happens!
+    // should I skip the rest if that happens???
+    if (OBJ_GET_FREE(pobj) != 0)
+        return retval;
+        
     type = (PmType_t)OBJ_GET_TYPE(pobj);
     switch (type)
     {

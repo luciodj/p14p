@@ -72,4 +72,4 @@ indent :
 # Remove files made by default make
 clean :
 	@$(RM) $(PM_LIB_FN) $(SOURCE_IMG) $(SOURCE_NAT)
-#	@$(RM) $(OBJECTS)
+	@$(RM) $(OBJECTS)

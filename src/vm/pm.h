@@ -28,6 +28,9 @@ extern "C" {
 #include <stdint.h>
 #include <stdio.h>
 
+/** Sets the level of verbosity to allow in debug prints */
+#define DEBUG_PRINT_VERBOSITY VERBOSITY_OFF
+
 /**
  * Value indicating the release of PyMite
  *
@@ -35,7 +38,7 @@ extern "C" {
  * It helps locate a defect when used in conjunction with a fileID
  * and line number.
  */
-#define PM_RELEASE 8
+#define PM_RELEASE 9
 
 
 /** null for C++ and C code */
@@ -122,14 +125,13 @@ extern "C" {
 /** Use as the first argument to C_DEBUG_PRINT for high volume messages */
 #define VERBOSITY_HIGH 3
 
-#if __DEBUG__
-#include <stdio.h>
 
 /** To be used to set DEBUG_PRINT_VERBOSITY to a value so no prints occur */
 #define VERBOSITY_OFF 0
 
-/** Sets the level of verbosity to allow in debug prints */
-#define DEBUG_PRINT_VERBOSITY VERBOSITY_OFF
+
+#ifdef  __DEBUG__
+#include <stdio.h>
 
 /** Prints a debug message when the verbosity is within the set value */
 #define C_DEBUG_PRINT(v, f, ...) \

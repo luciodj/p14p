@@ -1,8 +1,3 @@
-# This file is Copyright 2007 Dean Hall.
-# This file is part of the Python-on-a-Chip libraries.
-# This software is licensed under the MIT License.
-# See the LICENSE file for details.
-
 ## @file
 #  @copybrief avr
 ## @package avr
@@ -10,45 +5,12 @@
 #
 # Provides generic access to the AVR microcontroller
 #
-# Note that to save RAM when the module is imported, many of the
-# port & ddr methods below are commented out. Uncomment and recompile
-# in order to use!
-#
-# <b>USAGE</b>
-#
-# \code
-# from avr import *
-#
-# Pin() examples:
-#   pin enumeration PORTA..F -> 0, 8, 16, 24 .. 47
 # 
-#   pin12 = Pin(12, INPUT + PULL_UP) # pin 12 (aka B4) as input with pull up enabled
-#   print pin12.get()
-#
-#   pin13 = Pin(13, Pin.OUTPUT) # configure pin 13 (aka B5) as output
-#   pin13.toggle()
-
-#   LED = Pin(45,  Pin.OUTPUT + Pin.START_HIGH + Pin.INVERT )
-#   LED.set(Pin.ON)
-#   LED.set(Pin.OFF)
-#   LED.toggle()
-#   LED.get() -> True/False
-#
-#  Button() example: (BTN is the default button on the curiosity board)
-#   BTN = Button(46)
-#   print BTN.pressed() # -> True/False (non-pressed -> pressed)
-#   print BTN.state() # -> True/False (istantaneous)
-#
-# Blocking delays:
-#   delay(500) # ms
-#
-# SPI example # sck, mosi, miso must match the selected inst default pins
-#   oled = SPI(0, mode=0, sck=40, mosi=41, miso=42, frequency=4000000)
-#   oled.transfer(bytearray(1,2,3,4))
-# 
-# \endcode
-
 """__NATIVE__
+/* 
+ * AVR MCU Access Module
+ * Provides generic access to the AVR microcontroller
+ */
 #include <avr/io.h>
 #define __DELAY_BACKWARD_COMPATIBLE__
 #include <util/delay.h>
@@ -56,41 +18,12 @@
 #include "avr.h"
 """
 
-class Pin(object) :
-    HIGH = 1
-    LOW  = 0
-    ON   = 1
-    OFF  = 0
-    # configuration
-    INPUT      = 0
-    OUTPUT     = 1<<0
-    START_HIGH = 1<<1
-    INVERT     = 1<<2
-    PULL_UP    = 1<<3
-    IOC        = 1<<4
-
-    def __init__(self, pin_no, config):
-        self.pin_no = pin_no
-        if config & Pin.START_HIGH :
-            _pin(pin_no, Pin.HIGH)
-        self.ctrl(config)
-
-    def ctrl(self, config):
-        _pin_config(self.pin_no, config)
-
-    def set(self, value):
-        _pin(self.pin_no, value)
-
-    def toggle(self):
-        _pin(self.pin_no, not _pin(self.pin_no))
-
-    def get(self):
-        return _pin(self.pin_no)
-
-# Default LED present on Curiosity board
-# LED = Pin(45, 7) #Pin.OUTPUT + Pin.INVERT + Pin.START_HIGH)
-
-
+##
+# delay(ms) 
+#   blocking loop based delay routine
+#  example:
+#   delay(500) # ms
+#
 def delay(ms):
     """__NATIVE__
     PmReturn_t retval = PM_RET_OK;
@@ -116,33 +49,59 @@ def delay(ms):
     """
     pass
 
-# define AVR-DA Curiosity specific LED pin and value
-            
-class Button(object) :
-    "Handle simple Push buttons"
 
-    def __init__(self, pin_no):
+##
+#   Pin - Basic I/O definition 
+#       pin_no is specified as an integer, 0-47 (A0=0, A1=1 .. B0=8, B1=9 ... )
+#       values are either boolean True/False or Integer 0 or non-zero.
+#   examples: 
+#       pin12 = Pin(12, Pin.INPUT + Pin.PULL_UP) # pin 12 (aka B4) as input with pull up enabled
+#       print pin12.get()
+#
+#       pin13 = Pin(13, Pin.OUTPUT) # configure pin 13 (aka B5) as output
+#       pin13.toggle()
+#
+#       LED = Pin(45,  Pin.OUTPUT + Pin.START_HIGH + Pin.INVERT ) # use invert for LEDs tied to Vdd
+#       LED.set(Pin.ON)
+#       LED.set(Pin.OFF)
+#       LED.toggle()
+#       LED.get() -> True/False
+#
+#       Default LED present on Curiosity board
+#       LED = Pin(45, 7) #Pin.OUTPUT + Pin.INVERT + Pin.START_HIGH)
+#
+class Pin(object) :
+    HIGH = 1
+    LOW  = 0
+    ON   = 1
+    OFF  = 0
+    # configuration
+    INPUT      = 0      # set pin as input
+    OUTPUT     = 1<<0   # set pin as output
+    START_HIGH = 1<<1   # start pin high 
+    INVERT     = 1<<2   # invert pin logic 
+    PULL_UP    = 1<<3   # enable weak pull ups
+    #IOC        = 1<<4   # enable interrupt logic (falling edge)
+
+    def __init__(self, pin_no, config):
         self.pin_no = pin_no
-        _pin(pin_no, Pin.INPUT)
-        self.prev = False
+        if config & Pin.START_HIGH :
+            _pin(pin_no, Pin.HIGH)
+        self.ctrl(config)
 
-    def pressed(self):
-        prev = self.prev
-        self.prev = self.state()    # new state
-        return  True if not prev and self.prev else False         
+    def ctrl(self, config):
+        _pin_config(self.pin_no, config)
 
-    def state(self):
-        return not _pin(self.pin_no)
+    def set(self, value):
+        _pin(self.pin_no, value)
 
-# Default button present on Curiosity board
-# BTN = Button(46)
+    def toggle(self):
+        _pin(self.pin_no, not _pin(self.pin_no))
 
-# 
-# Low level routines to access AVR-DA and Curiosity assets
-#
-# Pin is specified as an integer, 0-47 (A0=0, A1=1 .. B0=8, B1=9 ... )
-#
-# Value is either boolean True/False or Integer 0 or non-zero.
+    def get(self):
+        return _pin(self.pin_no)
+
+##
 #
 def _pin(pin_no, value):
     """__NATIVE__
@@ -203,11 +162,39 @@ def _pin_config(pin_no, config):
     return retval;
     """
     pass
-# 
+
+
+##
+#   "Handle simple Push buttons"
+#   Button() example: 
+#       BTN = Button(46)    # default button on the curiosity board
+#       print BTN.pressed() # -> True/False (non-pressed -> pressed)
+#       print BTN.state()   # -> True/False (istantaneous)
+#
+class Button(object) :
+
+    def __init__(self, pin_no):
+        self.pin_no = pin_no
+        _pin(pin_no, Pin.INPUT + Pin.INVERT)
+        self.prev = False
+
+    def pressed(self):
+        prev = self.prev
+        self.prev = self.state()    # new state
+        return  True if not prev and self.prev else False         
+
+    def state(self):
+        return not _pin(self.pin_no)
+
+## 
 # SPI
+#   Synchronous Port Interface"
+#   examples :  
+#       oled = Spi(0) 
+#       oled = Spi(0, 0, 3000000) 
+#       oled.xfer(bytearray([1,2,3,4]))
 #
 class Spi(object):
-    "Synchronous Port Interface"
     def __init__(self, inst, mode=0, freq=8000000,  mosi=4, miso=5, msck=6):
         self.id = inst
         self.freq = _spi_config(inst, mode, freq, mosi, miso, msck)
@@ -215,10 +202,6 @@ class Spi(object):
     def xfer(self, data):
         return _spi_xfer(self.id, data)
 
-# example 
-#oled = Spi(0) 
-#oled = Spi(0, 0, 3000000) 
-#oled.xfer(bytearray([1,2,3,4]))
 
 def _spi_config(inst, mode, frequency, mosi, miso, msck):
     """__NATIVE__
@@ -298,15 +281,15 @@ def _spi_xfer(inst, data):
     '''
     pass
 
-#
+##
 #   ADC support
 #
-# ADC = Adc(); # init
-# ADC.get(TEMP) #-> return temp sensor reading
-# ADC.get(GND)  #-> 0 reading (check)
-# ADC.get(DAC)  #-> DAC internal pick
-# ADC.get(0-15) #-> read analog pin 0-15
-
+#   ADC = Adc(); # init
+#   ADC.get(TEMP) #-> return temp sensor reading
+#   ADC.get(GND)  #-> 0 reading (check)
+#   ADC.get(DAC)  #-> DAC internal pick
+#   ADC.get(0-15) #-> read analog pin 0-15
+#
 class Adc(object):
     TEMP = 0x42
     DAC  = 0x48
@@ -355,15 +338,17 @@ def _adc_get(channel):
     pass
 
 ##
-# TCA module
-# 
-# tca0 = Tca(0) # select TCA0 with a 20ms period PC0 output (1ms duty)
-# tca0.set(0, 2000) # change PC0 duty cycle to 2ms
+#   TCA module
+#   examples:
+#     select TCA0 with a 20ms period PC0 output (1ms duty)
+#       tca0 = Tca(0) 
+#       tca0.set(0, 2000) # change PC0 duty cycle to 2ms
 #
-# tca0 = Tca(0, 10000, 1000, 1000, 1000) # select TCA0, period = 10ms, 3 outputs (1ms each)
-# tca.set(0, 100) # PC0 = 100 us
-# tca.set(1, 200) # PC1 = 200 us
-# tca.set(2, 300) # PC2 = 300 us
+#     select TCA0, period = 10ms, 3 outputs (1ms each)
+#       tca0 = Tca(0, 10000, 1000, 1000, 1000) 
+#       tca.set(0, 100) # PC0 = 100 us
+#       tca.set(1, 200) # PC1 = 200 us
+#       tca.set(2, 300) # PC2 = 300 us
 #
 class Tca(object):
     def __init__(self, inst, period_us=20000, duty0=1000, duty1=None, duty2=None):
@@ -430,4 +415,263 @@ def _tca_config(inst, period, b0, b1, b2):
     NATIVE_SET_TOS(PM_NONE);
     return retval;
     """
+    pass
+
+##
+#   TWI - I2C interface
+#     examples:
+#       twi = Twi(0, 0x76) # init TWI0, address 0x76, alternate 0 pins A2/A3, standard mode)
+#       written = twi.write(bytearray("Hello")) # write 5 bytes, return number of bytes written
+#       read    = twi.read( bytearray(5))       # read 5 bytes, return number of bytes read
+#
+class Twi(object):
+    def __init__(self, inst, addr, alt=0, mode=0):
+        self.inst = inst
+        self.addr = addr
+        _twi_config(inst, mode, alt)
+
+    def read(self, barray):
+        return _twi_read(self.inst, self.addr, barray)
+
+    def write(self, barray):
+        return _twi_write(self.inst, self.addr, barray)
+
+#
+# SMB - I2 Interface
+#   examples:
+#       smb = Smb(0, 0xA5, 2) # init TWI0 , address 76, alternate 2 pins C2/C3
+#       read = smb.read_word( 3) # read a word from register #3, return int or None
+#       read = smb.read_byte( 4) # read a byte from register #4, return int or None
+#       success = smb.write_word( 5, 0xAA55) # write a word to register #5, return true if successfull
+#       success = smb.write_byte( 6, 0xAA55) # write a byte to register #6, return true if successfull
+#
+class Smb(object):
+    def __init__(self, inst, addr, alt=0):
+        self.inst = inst
+        self.addr = addr
+        _twi_config(inst, 0, alt)
+
+    def read_word(self, reg):
+        b = bytearray(2)
+        if (_smb_read(self.inst, self.addr, reg, b) == 2):
+            return b[0]*256+b[1] # msb first
+        else: 
+            return None
+
+    def read(self, reg=0xd0):
+        b = bytearray(1)
+        if _smb_read(self.inst, self.addr, reg, b) == 1:
+            return b[0]
+        else: 
+            return None
+
+    def write_word(self, reg, value):
+        b = bytearray([value & 0xff, value >> 8]) # msb first
+        return _smb_write(self.inst, self.addr, reg, b) == 2
+            
+    def write(self, reg, value):
+        b = bytearray([value & 0xff])
+        return _smb_write(self.inst, self.addr, reg, b) == 1
+
+
+
+def _twi_config(inst, mode, alt):
+    '''__NATIVE__
+    PmReturn_t retval = PM_RET_OK;
+
+    CHECK_NUM_ARGS(3);
+
+    uint8_t inst;
+    pPmObj_t pi = NATIVE_GET_LOCAL(0);
+    PM_CHECK_FUNCTION( getRangedUint8(pi, 0, 1, &inst));
+
+    uint8_t mode;
+    pPmObj_t pm = NATIVE_GET_LOCAL(1);
+    PM_CHECK_FUNCTION( getRangedUint8(pm, 0, 1, &mode));
+
+    uint8_t alternate;
+    pPmObj_t pa = NATIVE_GET_LOCAL(2);
+    PM_CHECK_FUNCTION( getRangedUint8(pa, 0, 2, &alternate));
+    
+    avr_twi_config(inst, mode, alternate);
+
+    NATIVE_SET_TOS(PM_NONE);
+    return retval;
+    '''
+    pass
+
+def _twi_write(inst, addr, data):
+    '''__NATIVE__
+    PmReturn_t retval = PM_RET_OK;
+    pPmObj_t pba;
+    pPmObj_t pVal;
+
+    CHECK_NUM_ARGS(3);
+
+    uint8_t inst;
+    pPmObj_t pi = NATIVE_GET_LOCAL(0);
+    PM_CHECK_FUNCTION( getRangedUint8(pi, 0, 1, &inst));
+
+    uint8_t addr;
+    pPmObj_t pa = NATIVE_GET_LOCAL(1);
+    PM_CHECK_FUNCTION( getRangedUint8(pa, 0, 127, &addr));
+
+    pPmObj_t po = NATIVE_GET_LOCAL(2);
+    if (OBJ_GET_TYPE(po) != OBJ_TYPE_CLI) { // must be a class inst 
+        PM_RAISE(retval, PM_RET_EX_TYPE);
+        return retval;
+    }
+    // get the actual byte array object it should contain
+    retval = dict_getItem((pPmObj_t)((pPmInstance_t)po)->cli_attrs,
+                        PM_NONE,
+                        (pPmObj_t *)&pba);
+    PM_RETURN_IF_ERROR(retval);
+
+    if (OBJ_GET_TYPE(pba) != OBJ_TYPE_BYA) { // must contain a bytearray
+        PM_RAISE(retval, PM_RET_EX_TYPE);
+        return retval;
+    }
+
+    uint8_t n = ((pPmBytearray_t)pba)->length;
+    uint8_t *pb = ((pPmBytearray_t)pba)->val->val;
+
+    retval = int_new(avr_twi_write(inst, addr, pb, n), &pVal);
+
+    NATIVE_SET_TOS(pVal);  // return number of bytes written
+    return retval;
+    '''
+    pass
+
+def _twi_read(inst, addr, data):
+    '''__NATIVE__
+    PmReturn_t retval = PM_RET_OK;
+    pPmObj_t pba;
+    pPmObj_t pVal;
+
+    CHECK_NUM_ARGS(3);
+
+    uint8_t inst;
+    pPmObj_t pi = NATIVE_GET_LOCAL(0);
+    PM_CHECK_FUNCTION( getRangedUint8(pi, 0, 1, &inst));
+
+    uint8_t addr;
+    pPmObj_t pa = NATIVE_GET_LOCAL(1);
+    PM_CHECK_FUNCTION( getRangedUint8(pa, 0, 127, &addr));
+
+    pPmObj_t po = NATIVE_GET_LOCAL(2);
+    if (OBJ_GET_TYPE(po) != OBJ_TYPE_CLI) { // must be a class inst 
+        PM_RAISE(retval, PM_RET_EX_TYPE);
+        return retval;
+    }
+    // get the actual byte array object it should contain
+    retval = dict_getItem((pPmObj_t)((pPmInstance_t)po)->cli_attrs,
+                        PM_NONE,
+                        (pPmObj_t *)&pba);
+    PM_RETURN_IF_ERROR(retval);
+
+    if (OBJ_GET_TYPE(pba) != OBJ_TYPE_BYA) { // must contain a bytearray
+        PM_RAISE(retval, PM_RET_EX_TYPE);
+        return retval;
+    }
+
+    uint8_t n = ((pPmBytearray_t)pba)->length;
+    uint8_t *pb = ((pPmBytearray_t)pba)->val->val;
+
+    retval = int_new(avr_twi_read(inst, addr, pb, n), &pVal);
+
+    NATIVE_SET_TOS(pVal);  // return number of bytes read
+    return retval;
+    '''
+    pass
+
+def _smb_write(inst, addr, reg, data):
+    '''__NATIVE__
+    PmReturn_t retval = PM_RET_OK;
+    pPmObj_t pba;
+    pPmObj_t pVal;
+
+    CHECK_NUM_ARGS(4);
+
+    uint8_t inst;
+    pPmObj_t pi = NATIVE_GET_LOCAL(0);
+    PM_CHECK_FUNCTION( getRangedUint8(pi, 0, 1, &inst));
+
+    uint8_t addr;
+    pPmObj_t pa = NATIVE_GET_LOCAL(1);
+    PM_CHECK_FUNCTION( getRangedUint8(pa, 0, 127, &addr));
+
+    uint8_t reg;
+    pPmObj_t pr = NATIVE_GET_LOCAL(2);
+    PM_CHECK_FUNCTION( getRangedUint8(pr, 0, 255, &reg));
+
+    pPmObj_t po = NATIVE_GET_LOCAL(3);
+    if (OBJ_GET_TYPE(po) != OBJ_TYPE_CLI) { // must be a class inst 
+        PM_RAISE(retval, PM_RET_EX_TYPE);
+        return retval;
+    }
+    // get the actual byte array object it should contain
+    retval = dict_getItem((pPmObj_t)((pPmInstance_t)po)->cli_attrs,
+                        PM_NONE,
+                        (pPmObj_t *)&pba);
+    PM_RETURN_IF_ERROR(retval);
+
+    if (OBJ_GET_TYPE(pba) != OBJ_TYPE_BYA) { // must contain a bytearray
+        PM_RAISE(retval, PM_RET_EX_TYPE);
+        return retval;
+    }
+
+    uint8_t n = ((pPmBytearray_t)pba)->length;
+    uint8_t *pb = ((pPmBytearray_t)pba)->val->val;
+
+    retval = int_new(avr_smb_write(inst, addr, reg, pb, n), &pVal);
+
+    NATIVE_SET_TOS(pVal);  // return number of bytes written
+    return retval;
+    '''
+    pass
+
+def _smb_read(inst, addr, reg, data):
+    '''__NATIVE__
+    PmReturn_t retval = PM_RET_OK;
+    pPmObj_t pba;
+    pPmObj_t pVal;
+
+    CHECK_NUM_ARGS(4);
+
+    uint8_t inst;
+    pPmObj_t pi = NATIVE_GET_LOCAL(0);
+    PM_CHECK_FUNCTION( getRangedUint8(pi, 0, 1, &inst));
+
+    uint8_t addr;
+    pPmObj_t pa = NATIVE_GET_LOCAL(1);
+    PM_CHECK_FUNCTION( getRangedUint8(pa, 0, 127, &addr));
+
+    uint8_t reg;
+    pPmObj_t pr = NATIVE_GET_LOCAL(2);
+    PM_CHECK_FUNCTION( getRangedUint8(pr, 0, 255, &reg));
+
+    pPmObj_t po = NATIVE_GET_LOCAL(3);
+    if (OBJ_GET_TYPE(po) != OBJ_TYPE_CLI) { // must be a class inst 
+        PM_RAISE(retval, PM_RET_EX_TYPE);
+        return retval;
+    }
+    // get the actual byte array object it should contain
+    retval = dict_getItem((pPmObj_t)((pPmInstance_t)po)->cli_attrs,
+                        PM_NONE,
+                        (pPmObj_t *)&pba);
+    PM_RETURN_IF_ERROR(retval);
+
+    if (OBJ_GET_TYPE(pba) != OBJ_TYPE_BYA) { // must contain a bytearray
+        PM_RAISE(retval, PM_RET_EX_TYPE);
+        return retval;
+    }
+
+    uint8_t n = ((pPmBytearray_t)pba)->length;
+    uint8_t *pb = ((pPmBytearray_t)pba)->val->val;
+
+    retval = int_new(avr_smb_read(inst, addr, reg, pb, n), &pVal);
+
+    NATIVE_SET_TOS(pVal);  // return number of bytes read
+    return retval;
+    '''
     pass

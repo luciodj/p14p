@@ -57,6 +57,10 @@ bool avr_pin_get(uint8_t pin_no)
     return port->IN & (1<<pin);    
 }
 
+/**
+ *  \brief Initialize a SPI port
+ */
+
 uint32_t avr_spi_config(uint8_t instance, uint8_t mode, uint32_t frequency)
 {    
     /* get pointer to SPI instance registers */
@@ -102,7 +106,7 @@ void avr_spi_xfer(uint8_t instance, uint8_t size, uint8_t *pb)
 }
 
 /**
- * \brief configure ADC interface
+ * \brief configure the ADC interface
  */
 void avr_adc_config(void)
 {
@@ -151,6 +155,9 @@ uint16_t avr_adc_get(uint8_t channel)
 	return res;
 }
 
+/**
+ * \brief configure the  Timer Counter A (TCA)
+ */ 
 void avr_tca_config(uint8_t inst, uint16_t period_us, bool out0, bool out1, bool out2) 
 {
     TCA_t *tca = &TCA0 + (inst & 1); // TCA0 or TCA1
@@ -191,8 +198,8 @@ void avr_tca_config(uint8_t inst, uint16_t period_us, bool out0, bool out1, bool
         avr_pin_config(16, PINCFG_OUTPUT);  //pin C0  
         avr_pin_config(17, PINCFG_OUTPUT);  //pin C1 
         avr_pin_config(18, PINCFG_OUTPUT);  //pin C2  
-        PORTMUX.TCAROUTEA = (PORTMUX.TCAROUTEA & 0x7) | (0<<3); // TCA1-> PB0-2 
     } else {
+        PORTMUX.TCAROUTEA = (PORTMUX.TCAROUTEA & 0x7) | (0<<3); // TCA1-> PB0-2 
         avr_pin_config( 8, PINCFG_OUTPUT);  //pin B0  
         avr_pin_config( 9, PINCFG_OUTPUT);  //pin B1 
         avr_pin_config(10, PINCFG_OUTPUT);  //pin B2  
@@ -205,4 +212,132 @@ void avr_tca_set(uint8_t inst, uint8_t chan, uint16_t duty_us)
     if (chan == 0) tca->SINGLE.CMP0 = duty_us*3;
     if (chan == 1) tca->SINGLE.CMP1 = duty_us*3;
     if (chan == 2) tca->SINGLE.CMP2 = duty_us*3;
+}
+
+
+/**
+ * \brief configure the I2C (TWI) bus master interface
+ * \param inst selects the TWI instance [0,1]
+ * \param mode is 0:100kHz, 1:400kHz, (2:1MHz)
+ * \param alt  selects alternate pinouts
+ */
+
+#define TWI_BAUD(F_SCL, T_RISE)    \
+    ((((((float)F_CPU / (float)F_SCL)) - 10 - ((float)F_CPU * T_RISE / 1000000))) / 2)
+
+void avr_twi_config(uint8_t inst, uint8_t mode, uint8_t alt)
+{
+    TWI_t *twi = &TWI0 + (inst & 1);  // select instance
+    
+    if (mode == 0) 
+        twi->MBAUD = TWI_BAUD(100000, 0);    // configure clock standard mode
+    else // mode == 1
+        twi->MBAUD = TWI_BAUD(400000, 0);    // configure clock fast mode
+
+    // configure pins multiplexer
+    PORTMUX.TWIROUTEA = (alt & 3) << (2 * (inst & 1));
+
+    twi->MCTRLA = TWI_TIMEOUT_200US_gc | 1;   // enable master mode and set TWI timeout (200us)
+    // twi->MCTRLB = TWI_FLUSH_bm;               // flush
+    twi->MSTATUS = TWI_BUSSTATE_IDLE_gc;      // force idle state
+}
+
+#define RIF     0x80        // MSTATUS Read Interrupt Flag
+#define WIF     0x40        // MSTATUS Write Interrupt Flag
+#define RXACK   0x10        // ACK/NACK received
+#define ARBLOST 0x08        // MSTATUS lost arbitration 
+
+bool _twi_start(TWI_t *twi, uint8_t address)
+{
+    unsigned to = 0xffff;
+    twi->MADDR = address;                   // start transmission with address 
+    while(((twi->MSTATUS & (WIF | RIF)) == 0) && (to-->0));     // wait for write to complete
+    if (to == 0) return false;
+    return ((twi->MSTATUS & (RXACK | ARBLOST)) == 0);   // return true if ack received (no arbloss)   
+}
+
+bool _twi_read_byte(TWI_t *twi, uint8_t *pbyte)
+{
+    unsigned to = 0xffff;
+    while(((twi->MSTATUS & (RIF | WIF)) == 0) && (to-->0));   // wait for a data byte (or WIF if arb lost)
+    if (to == 0) return false;
+    if (twi->MSTATUS & RIF)  {
+        *pbyte = twi->MDATA; // fetch the data
+    }
+    return ((twi->MSTATUS & ARBLOST) == 0);     // return true if no arbitration loss
+}
+
+bool _twi_write_byte(TWI_t *twi, uint8_t byte)
+{
+    unsigned to = 0xffff;
+    twi->MDATA = byte;                                  // write a data packet
+    while(((twi->MSTATUS & WIF) == 0) && (to-->0));     // wait for write to complete
+    if (to == 0) return false;
+    return ((twi->MSTATUS & (RXACK | ARBLOST)) == 0);   // return true if ack received (no arbloss)   
+}
+
+void _twi_stop(TWI_t *twi)
+{
+    unsigned to = 0xffff;
+    twi->MCTRLB |= TWI_MCMD_STOP_gc;                // send a stop command
+    while(((twi->MSTATUS & 3) != 1) && (to-->0));   // wait for the bus to return idle
+}
+
+uint8_t avr_twi_write(uint8_t inst, uint8_t address, uint8_t *buffer, uint8_t len)
+{
+    bool retval = true;
+    uint8_t retcount = 0;
+    TWI_t *twi = &TWI0 + (inst & 1);
+
+    retval = _twi_start(twi, (address<<1) | 0); // write command
+    while (retval && (len-->0)) {
+        retval = _twi_write_byte(twi, *buffer++);
+        if (retval) retcount++;
+    }
+    _twi_stop(twi);
+    return retcount;
+}
+
+uint8_t avr_twi_read(uint8_t inst, uint8_t address, uint8_t *buffer, uint8_t len)
+{
+    bool retval = true;
+    uint8_t retcount = 0;
+    TWI_t *twi = &TWI0 + (inst & 1);
+
+    retval = _twi_start(twi, (address<<1) | 1); // read command
+    twi->MCTRLB = 0 ; // default to ACK 
+    do {
+        retval = _twi_read_byte(twi, buffer++);
+        if (retval)  {
+            retcount++;
+        }
+        if (--len > 0) 
+            twi->MCTRLB = TWI_MCMD_RECVTRANS_gc;  // send ack and start a new transaction 
+    } while (retval && len>0);
+    twi->MCTRLB = 4 ; // send a nack and stop command
+    _twi_stop(twi);
+
+    // printf("_twi_read_byte returned %x\n", retval);
+    return retcount;  // return number of bytes read
+}
+
+uint8_t avr_smb_read(uint8_t inst, uint8_t address, uint8_t reg, uint8_t *value, uint8_t len)
+{
+    uint8_t reg_buffer = reg;
+    uint8_t retcount = avr_twi_write(inst, address, &reg_buffer, 1);
+    // printf("Smb_read return %d\n", retcount);
+    if (retcount) {
+        return avr_twi_read(inst, address, value, len);
+    }
+    return 0;
+}
+
+uint8_t avr_smb_write(uint8_t inst, uint8_t address, uint8_t reg, uint8_t *value, uint8_t len)
+{
+    uint8_t reg_buffer = reg;
+    uint8_t retcount = avr_twi_write(inst, address, &reg_buffer, 1);
+    if (retcount) {
+        return avr_twi_write(inst, address, value, len);
+    }
+    return 0;
 }

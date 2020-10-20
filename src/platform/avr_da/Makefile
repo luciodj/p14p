@@ -22,7 +22,7 @@ TARGET = main
 F_CPU = 24000000UL
 SRC = $(TARGET).c plat.c  $(TARGET)_nat.c $(TARGET)_img.c  pyToC.c avr.c
 ASRC =
-OPT = s
+OPT = 2
 
 # This project uses the AVR-Dx_DFP include files provided in the device series support pack
 # the latest version at this time is: 1.0.18
@@ -57,7 +57,7 @@ CINCS = -I../../vm -I "$(abspath .)" -I $(DEVPACK)/include -B $(DEVPACK)/avr-gcc
 
 CDEBUG = -g$(DEBUG_FMT)
 CWARN =  -Wall -Wstrict-prototypes #-Werror
-CTUNING = -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums
+CTUNING = -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums -mconst-data-in-progmem
 #CEXTRA = -Wa,-adhlns=$(<:.c=.lst)
 CFLAGS = $(CDEBUG) $(CDEFS) $(CINCS) -O$(OPT) $(CWARN) $(CSTANDARD) $(CTUNING) $(CEXTRA)
 
@@ -106,7 +106,8 @@ LDFLAGS += -L../../vm -l$(PM_LIB_ROOT) -L.
 # Programming support using drag 'n drop. Settings and variables.
 
 SHELL = sh
-CC = avr-gcc
+# CC = avr-gcc
+CC = /Applications/microchip/xc8/v2.30/bin/xc8-cc
 OBJCOPY = avr-objcopy
 OBJDUMP = avr-objdump
 SIZE = avr-size

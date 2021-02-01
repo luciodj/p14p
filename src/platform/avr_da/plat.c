@@ -18,20 +18,21 @@
 
 
 /** PyMite platform-specific routines for AVR target */
-
-
 #include <stdio.h>
 #include <string.h>
 #include <avr/io.h>
 #include <avr/interrupt.h>
+
 #include <avr/pgmspace.h>
+
+// #define PROGMEM 
 #include <avr/eeprom.h>
 #include <stdbool.h>
 
 #define __DELAY_BACKWARD_COMPATIBLE__
 #include <util/delay.h>
 
-#include "pm.h"
+#include "../../vm/pm.h"
 extern unsigned char const usrlib_img[];
 
 /* adjust depending on RTC-PIT oscillator selected and prescaler applied
@@ -340,7 +341,7 @@ static char const fnstr_23[] PROGMEM = "float.c";
 static char const fnstr_24[] PROGMEM = "class.c";
 static char const fnstr_25[] PROGMEM = "bytearray.c";
 
-static PGM_P const fnlookup[LEN_FNLOOKUP] PROGMEM =
+static char const *fnlookup[LEN_FNLOOKUP]  =
 {
     fnstr_00, fnstr_01, fnstr_02, fnstr_03,
     fnstr_04, fnstr_05, fnstr_06, fnstr_07,
@@ -352,10 +353,10 @@ static PGM_P const fnlookup[LEN_FNLOOKUP] PROGMEM =
 };
 
 /* This table should match src/vm/pm.h PmReturn_t */
-static char const exnstr_00[] PROGMEM = "Exception";
-static char const exnstr_01[] PROGMEM = "SystemExit";
-static char const exnstr_02[] PROGMEM = "IoError";
-static char const exnstr_03[] PROGMEM = "ZeroDivisionError";
+static const char exnstr_00[] PROGMEM = "Exception";
+static const char exnstr_01[] PROGMEM = "SystemExit";
+static const char exnstr_02[] PROGMEM = "IoError";
+static const char exnstr_03[] PROGMEM = "ZeroDivisionError";
 static char const exnstr_04[] PROGMEM = "AssertionError";
 static char const exnstr_05[] PROGMEM = "AttributeError";
 static char const exnstr_06[] PROGMEM = "ImportError";
@@ -371,7 +372,7 @@ static char const exnstr_15[] PROGMEM = "StopIteration";
 static char const exnstr_16[] PROGMEM = "Warning";
 static char const exnstr_17[] PROGMEM = "OverflowError";
 
-static  PGM_P const exnlookup[LEN_EXNLOOKUP] PROGMEM =
+static const char * exnlookup[LEN_EXNLOOKUP]  =
 {
     exnstr_00, exnstr_01, exnstr_02, exnstr_03,
     exnstr_04, exnstr_05, exnstr_06, exnstr_07,
@@ -399,7 +400,7 @@ plat_reportError(PmReturn_t result)
     char pstrbuf[MAX(FN_MAX_LEN, EXN_MAX_LEN)];
 
     /* Print traceback */
-    puts_P(PSTR("Traceback (most recent call first):"));
+    puts("Traceback (most recent call first):");
 
     /* Get the top frame */
     pframe = gVmGlobal.pthread->pframe;
@@ -470,7 +471,7 @@ plat_reportError(PmReturn_t result)
     if ((res > 0) && ((res - PM_RET_EX) < LEN_EXNLOOKUP))
     {
         strncpy_P(pstrbuf,
-                  (PGM_P)pgm_read_word(&exnlookup[res - PM_RET_EX]),
+                  pgm_read_word(&exnlookup[res - PM_RET_EX]),
                   EXN_MAX_LEN);
         printf_P(PSTR("%s"), pstrbuf);
     }
@@ -483,7 +484,7 @@ plat_reportError(PmReturn_t result)
     if ((gVmGlobal.errFileId > 0) && (gVmGlobal.errFileId < LEN_FNLOOKUP))
     {
         strncpy_P(pstrbuf,
-                  (PGM_P)pgm_read_word(&fnlookup[gVmGlobal.errFileId]),
+                  pgm_read_word(&fnlookup[gVmGlobal.errFileId]),
                   FN_MAX_LEN);
         printf_P(PSTR("%s:"), pstrbuf);
     }

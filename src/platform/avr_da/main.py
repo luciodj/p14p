@@ -16,7 +16,7 @@ from avr import *
 LED = Pin(45, 7)
 BTN = Button(46)
 ADC = Adc()
-
+# S = Smb(0, 0x76, 2)
 # def bench(fn, times=1000):
 #     t=time()
 #     i=0

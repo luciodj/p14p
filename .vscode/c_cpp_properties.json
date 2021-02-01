@@ -1,0 +1,22 @@
+{
+    "configurations": [
+        {
+            "name": "XC8",
+            "includePath": [
+                "${default}",
+                "/Applications/microchip/xc8/v2.30/avr/avr/include",
+                "/Applications/microchip/xc8/v2.30/avr/lib/gcc/avr/5.4.0/include",
+                "${workspaceFolder}/src/platform/avr_da",
+                "${workspaceFolder}/src/vm"
+            ],
+            "defines": [],
+            "macFrameworkPath": [
+            ],
+            "compilerPath": "/Applications/microchip/xc8/v2.30/bin/xc8-cc",
+            "cStandard": "c99",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "clang-x64"
+        }
+    ],
+    "version": 4
+}

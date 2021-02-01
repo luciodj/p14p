@@ -1,0 +1,24 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "cppbuild",
+			"label": "C/C++: xc8-cc build active file",
+			"command": "make",
+			"args": [
+				 
+			],
+			"options": {
+				"cwd": "${workspaceFolder}/src/platform/avr_da/"
+			},
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"detail": "compiler: /Applications/microchip/xc8/v2.30/bin/xc8-cc"
+		}
+	]
+}

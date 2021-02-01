@@ -54,7 +54,6 @@ endif
 # Place -I options here
 CINCS = -I../../vm -I "$(abspath .)" -I $(DEVPACK)/include -B $(DEVPACK)/avr-gcc/dev/avr128da48
 
-
 CDEBUG = -g$(DEBUG_FMT)
 CWARN =  -Wall -Wstrict-prototypes #-Werror
 CTUNING = -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums -mconst-data-in-progmem
@@ -106,12 +105,12 @@ LDFLAGS += -L../../vm -l$(PM_LIB_ROOT) -L.
 # Programming support using drag 'n drop. Settings and variables.
 
 SHELL = sh
-# CC = avr-gcc
-CC = /Applications/microchip/xc8/v2.30/bin/xc8-cc
+# CC = avr-gcc  # modified to test XC8 2.30 compiler 
+CC = xc8-cc
+AR = xc8-ar
 OBJCOPY = avr-objcopy
 OBJDUMP = avr-objdump
 SIZE = avr-size
-AR = avr-ar
 NM = avr-nm
 REMOVE = rm -f
 MV = mv -f
@@ -130,7 +129,7 @@ ALL_CFLAGS = -mmcu=$(MCU) -I. $(CFLAGS)
 ALL_ASFLAGS = -mmcu=$(MCU) -I. -x assembler-with-cpp $(ASFLAGS)
 
 TARGET_DRIVE = /Volumes/CURIOSITY/
-# TARGET_DRIVE = D:\CURIOSITY\ # uncomment for WINDOWA users
+# TARGET_DRIVE = D:\CURIOSITY\ # uncomment for WINDOWS users
 
 COPY_FLAGS =   
 # COPY_FLAGS =  -Y  # uncomment for WINDOWS users 
